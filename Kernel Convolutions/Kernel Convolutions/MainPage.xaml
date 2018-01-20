@@ -1,0 +1,75 @@
+﻿<Page
+    x:Class="Kernel_Convolutions.MainPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:Kernel_Convolutions"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+    <Page.Resources>
+        <ResourceDictionary>
+            <Style x:Key="TitleTextBlock" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="28"/>
+                <Setter Property="HorizontalTextAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="FontWeight" Value="SemiLight"/>
+                <Setter Property="FontFamily" Value="Bahnschrift"/>
+            </Style>
+            <SolidColorBrush x:Key="SliderThumbBackground" Color="White"/>
+            <SolidColorBrush x:Key="SliderTrackFill" Color="White"/>
+            <SolidColorBrush x:Key="SliderTrackValueFill" Color="White"/>
+        </ResourceDictionary>
+    </Page.Resources>
+
+    <Grid ColumnSpacing="64" Padding="64,0,0,0" Background="{ThemeResource SystemControlAccentAcrylicWindowAccentMediumHighBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="16"/>
+            <RowDefinition Height="64"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="64"/>
+            <RowDefinition Height="16"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="256"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="1" Text="Controls" Style="{StaticResource TitleTextBlock}"/>
+        
+        <StackPanel Grid.Row="2" Spacing="16">
+            
+            <Button Name="LoadImageButton" Content="Load Image" Click="LoadImageButton_Click"/>
+
+            <StackPanel>
+                <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
+                <Slider Name="PixelationSlider" Minimum="4" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="4"/>
+                <Button Name="PixelateButton" Content="Go" Click="PixelateButton_Click" IsEnabled="False"/>
+            </StackPanel>
+
+        </StackPanel>
+
+        <Grid Padding="64,0" Grid.RowSpan="5" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="16"/>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="64"/>
+                <RowDefinition Height="16"/>
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <TextBlock Text="Original Image" Grid.Row="1" Style="{StaticResource TitleTextBlock}"/>
+            <Image Name="OriginalImage" Grid.Row="2" VerticalAlignment="Top"></Image>
+
+            <TextBlock Text="New Image" Grid.Row="1" Grid.Column="1" Style="{StaticResource TitleTextBlock}"/>
+            <Image Name="NewImage" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"></Image>
+
+        </Grid>
+
+        <Button Name="ResetButton" Content="Reset" Grid.Row="3" Click="ResetButton_Click"/>
+        
+    </Grid>
+</Page>
