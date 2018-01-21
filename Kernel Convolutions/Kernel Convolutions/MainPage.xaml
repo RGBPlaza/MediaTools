@@ -37,8 +37,6 @@
         <TextBlock Grid.Row="1" Text="Controls" Style="{StaticResource TitleTextBlock}"/>
         
         <StackPanel Grid.Row="2" Spacing="16">
-            
-            <Button Name="LoadImageButton" Content="Load Image" Click="LoadImageButton_Click"/>
 
             <StackPanel>
                 <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
@@ -62,14 +60,19 @@
             </Grid.ColumnDefinitions>
 
             <TextBlock Text="Original Image" Grid.Row="1" Style="{StaticResource TitleTextBlock}"/>
-            <Image Name="OriginalImage" Grid.Row="2" VerticalAlignment="Top"></Image>
+            <Image Name="OriginalImage" Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Stretch"></Image>
 
             <TextBlock Text="New Image" Grid.Row="1" Grid.Column="1" Style="{StaticResource TitleTextBlock}"/>
-            <Image Name="NewImage" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top"></Image>
+            <Image Name="NewImage" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Stretch"></Image>
 
         </Grid>
 
-        <Button Name="ResetButton" Content="Reset" Grid.Row="3" Click="ResetButton_Click"/>
-        
+        <StackPanel Orientation="Horizontal" Grid.Row="3" Spacing="8">
+            <Button Name="LoadImageButton" Content="Load" Click="LoadImageButton_Click"/>
+            <Button Name="ResetButton" Content="Reset" Click="ResetButton_Click" IsEnabled="False"/>
+            <Button Name="UpdateButton" Content="Update" Click="UpdateButton_Click" IsEnabled="False"/>
+            <Button Name="SaveButton" Content="Save" Click="SaveButton_Click" IsEnabled="False"/>
+        </StackPanel>
+
     </Grid>
 </Page>

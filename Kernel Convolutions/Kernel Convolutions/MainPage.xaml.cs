@@ -36,27 +36,16 @@ namespace Kernel_Convolutions
             this.InitializeComponent();
         }
 
+        private StorageFile originalImage;
         private SoftwareBitmap softwareBitmap;
+        private uint originalPixelIncrement = 1;
         private SoftwareBitmap newSoftwareBitmap;
+        private uint pixelIncrement;
 
-        private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
+        private async void LoadImage(StorageFile source)
         {
-            FileOpenPicker fileOpenPicker = new FileOpenPicker
-            {
-                SuggestedStartLocation = PickerLocationId.PicturesLibrary
-            };
-            fileOpenPicker.FileTypeFilter.Add(".png");
-            fileOpenPicker.FileTypeFilter.Add(".jpg");
-            fileOpenPicker.ViewMode = PickerViewMode.Thumbnail;
-
-            // Open a well-known image file created by Visual Studio template.
-            var storageFile = await fileOpenPicker.PickSingleFileAsync();
-
-            if (storageFile == null)
-                return;
-
-            // Open the stream for read.
-            using (var stream = await storageFile.OpenAsync(FileAccessMode.Read))
+            originalImage = source;
+            using (var stream = await source.OpenAsync(FileAccessMode.Read))
             {
                 // this is a PNG file so we need to decode it to raw pixel data.
                 var bitmapDecoder = await BitmapDecoder.CreateAsync(stream);
@@ -81,9 +70,36 @@ namespace Kernel_Convolutions
                 await softwareBitmapSource.SetBitmapAsync(softwareBitmap);
 
                 OriginalImage.Source = softwareBitmapSource;
-                PixelateButton.IsEnabled = true;
-                PixelationSlider.IsEnabled = true;
             }
+
+            NewImage.Source = null;
+            originalPixelIncrement = 1;
+            newSoftwareBitmap = null;
+            UpdateButton.IsEnabled = false;
+            SaveButton.IsEnabled = false;
+            ResetButton.IsEnabled = false;
+        }
+
+        private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
+        {
+            FileOpenPicker fileOpenPicker = new FileOpenPicker
+            {
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary
+            };
+            fileOpenPicker.FileTypeFilter.Add(".png");
+            fileOpenPicker.FileTypeFilter.Add(".jpg");
+            fileOpenPicker.ViewMode = PickerViewMode.Thumbnail;
+
+            // Open a well-known image file created by Visual Studio template.
+            originalImage = await fileOpenPicker.PickSingleFileAsync();
+
+            if (originalImage == null)
+                return;
+
+            LoadImage(originalImage);
+            PixelateButton.IsEnabled = true;
+            PixelationSlider.IsEnabled = true;
+
         }
 
         private void PixelateButton_Click(object sender, RoutedEventArgs e)
@@ -93,7 +109,7 @@ namespace Kernel_Convolutions
                 newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width, editor.height,BitmapAlphaMode.Ignore);
                 using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
                 {
-                    uint pixelIncrement = (uint)PixelationSlider.Value;
+                    pixelIncrement = originalPixelIncrement * (uint)PixelationSlider.Value;
                     SoftwareBitmapPixel pixel;
 
                     for (uint row = pixelIncrement/2; row < editor.height + (pixelIncrement / 2); row += pixelIncrement)
@@ -141,12 +157,56 @@ namespace Kernel_Convolutions
             await softwareBitmapSource.SetBitmapAsync(newSoftwareBitmap);
 
             NewImage.Source = softwareBitmapSource;
+            UpdateButton.IsEnabled = true;
+            SaveButton.IsEnabled = true;
+            ResetButton.IsEnabled = true;
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            newSoftwareBitmap = softwareBitmap;
-            SetImageOutput();
+            LoadImage(originalImage);
+        }
+
+        private async void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (originalImage == null)
+                return;
+
+            FileSavePicker fileSavePicker = new FileSavePicker
+            {
+                SuggestedStartLocation = PickerLocationId.PicturesLibrary,
+                SuggestedFileName = originalImage.DisplayName + "(edited)"
+            };
+            fileSavePicker.FileTypeChoices.Add("PNG", new List<string> { ".png" });
+            fileSavePicker.FileTypeChoices.Add("JPEG", new List<string> { ".jpg" });
+
+            var saveFile = await fileSavePicker.PickSaveFileAsync();
+
+            if (saveFile == null)
+                return;
+
+            // Open the stream for read.
+            using (var stream = await saveFile.OpenAsync(FileAccessMode.ReadWrite))
+            {
+                // this is a PNG file so we need to decode it to raw pixel data.
+                Guid encoderId = saveFile.FileType == ".jpg" ? BitmapEncoder.JpegEncoderId : BitmapEncoder.PngEncoderId;
+                var bitmapEncoder = await BitmapEncoder.CreateAsync(encoderId, stream);
+
+                bitmapEncoder.SetSoftwareBitmap(newSoftwareBitmap);
+                await bitmapEncoder.FlushAsync();
+            }
+
+        }
+
+        private async void UpdateButton_Click(object sender, RoutedEventArgs e)
+        {
+            originalPixelIncrement = pixelIncrement;
+            softwareBitmap = newSoftwareBitmap;
+
+            var softwareBitmapSource = new SoftwareBitmapSource();
+            await softwareBitmapSource.SetBitmapAsync(softwareBitmap);
+
+            OriginalImage.Source = softwareBitmapSource;
         }
     }
 }
