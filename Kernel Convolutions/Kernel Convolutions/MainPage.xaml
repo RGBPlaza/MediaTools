@@ -40,7 +40,7 @@
 
             <StackPanel>
                 <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
-                <Slider Name="PixelationSlider" Minimum="4" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="4"/>
+                <Slider Name="PixelationSlider" Minimum="4" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="5"/>
                 <Button Name="PixelateButton" Content="Go" Click="PixelateButton_Click" IsEnabled="False"/>
             </StackPanel>
 

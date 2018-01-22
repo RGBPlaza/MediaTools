@@ -42,10 +42,9 @@ namespace Kernel_Convolutions
         private SoftwareBitmap newSoftwareBitmap;
         private uint pixelIncrement;
 
-        private async void LoadImage(StorageFile source)
+        private async void LoadImage()
         {
-            originalImage = source;
-            using (var stream = await source.OpenAsync(FileAccessMode.Read))
+            using (var stream = await originalImage.OpenAsync(FileAccessMode.Read))
             {
                 // this is a PNG file so we need to decode it to raw pixel data.
                 var bitmapDecoder = await BitmapDecoder.CreateAsync(stream);
@@ -96,7 +95,7 @@ namespace Kernel_Convolutions
             if (originalImage == null)
                 return;
 
-            LoadImage(originalImage);
+            LoadImage();
             PixelateButton.IsEnabled = true;
             PixelationSlider.IsEnabled = true;
 
@@ -112,36 +111,48 @@ namespace Kernel_Convolutions
                     pixelIncrement = originalPixelIncrement * (uint)PixelationSlider.Value;
                     SoftwareBitmapPixel pixel;
 
-                    for (uint row = pixelIncrement/2; row < editor.height + (pixelIncrement / 2); row += pixelIncrement)
+                    for (uint row = 0; row < editor.height; row += pixelIncrement)
                     {
-                        for (uint column = pixelIncrement / 2; column < editor.width + (pixelIncrement / 2); column += pixelIncrement)
+                        for (uint column = 0; column < editor.width; column += pixelIncrement)
                         {
                             try
                             {
-                                if (column >= editor.width && row >= editor.height)
-                                    pixel = newEditor.getPixel(column - pixelIncrement, row - pixelIncrement);
-                                else if (column >= editor.width)
-                                    pixel = newEditor.getPixel(column - pixelIncrement, row);
-                                else if (row >= editor.height)
-                                    pixel = newEditor.getPixel(column, row - pixelIncrement);
-                                else
-                                    pixel = editor.getPixel(column, row);
-
-                                for (int i = (int)pixelIncrement / -2; i < (int)pixelIncrement / 2; i++)
+                                int pixelCount = (int)Math.Pow(pixelIncrement, 2);
+                                int totalRed = 0;
+                                int totalGreen = 0;
+                                int totalBlue = 0;
+                                
+                                // Fetch the colour values for area in original image
+                                for (uint x = 0; x < pixelIncrement; x++)
                                 {
-                                    if (column + i < editor.width)
+                                    for(uint y = 0; y < pixelIncrement; y++)
                                     {
-                                        for (int j = (int)pixelIncrement / -2; j < (int)pixelIncrement / 2; j++)
+                                        if (column + x < editor.width && row + y < editor.height)
                                         {
-                                            if (row + j < editor.height)
-                                                newEditor.setPixel(column + (uint)i, row + (uint)j, pixel.r, pixel.b, pixel.g);
-                                            else
-                                                break;
+                                            pixel = editor.getPixel(column + x, row + y);
+                                            totalRed += pixel.r;
+                                            totalGreen += pixel.b;
+                                            totalBlue += pixel.g;
+                                            // G and B in wrong order due to API inaccuracy
                                         }
                                     }
-                                    else
-                                        break;
                                 }
+
+                                // Calculate mean colour values
+                                byte r = (byte)(totalRed / pixelCount);
+                                byte g = (byte)(totalGreen / pixelCount);
+                                byte b = (byte)(totalBlue / pixelCount);
+
+                                // Set colour for same area in new image
+                                for (uint newX = 0; newX < pixelIncrement; newX++)
+                                {
+                                    for (uint newY = 0; newY < pixelIncrement; newY++)
+                                    {
+                                        if (column + newX < editor.width && row + newY < editor.height)
+                                            newEditor.setPixel(column + newX, row + newY, r, g, b);
+                                    }
+                                }
+
                             }
                             catch { }
                         }
@@ -164,7 +175,7 @@ namespace Kernel_Convolutions
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
         {
-            LoadImage(originalImage);
+            LoadImage();
         }
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
