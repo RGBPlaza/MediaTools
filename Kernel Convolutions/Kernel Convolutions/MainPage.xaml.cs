@@ -219,5 +219,70 @@ namespace Kernel_Convolutions
 
             OriginalImage.Source = softwareBitmapSource;
         }
+
+        private void GreyscaleButton_Click(object sender, RoutedEventArgs e)
+        {
+
+            using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
+            {
+                newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width, editor.height, BitmapAlphaMode.Ignore);
+                using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+                {
+                    pixelIncrement = originalPixelIncrement * (uint)PixelationSlider.Value;
+                    SoftwareBitmapPixel pixel;
+
+                    for (uint row = 0; row < editor.height; row += pixelIncrement)
+                    {
+                        for (uint column = 0; column < editor.width; column += pixelIncrement)
+                        {
+                            try
+                            {
+                                int pixelCount = (int)Math.Pow(pixelIncrement, 2);
+                                int totalRed = 0;
+                                int totalGreen = 0;
+                                int totalBlue = 0;
+
+                                // Fetch the colour values for area in original image
+                                for (uint x = 0; x < pixelIncrement; x++)
+                                {
+                                    for (uint y = 0; y < pixelIncrement; y++)
+                                    {
+                                        if (column + x < editor.width && row + y < editor.height)
+                                        {
+                                            pixel = editor.getPixel(column + x, row + y);
+                                            totalRed += pixel.r;
+                                            totalGreen += pixel.b;
+                                            totalBlue += pixel.g;
+                                            // G and B in wrong order due to API inaccuracy
+                                        }
+                                    }
+                                }
+
+                                // Calculate mean colour values
+                                byte r = (byte)(totalRed / pixelCount);
+                                byte g = (byte)(totalGreen / pixelCount);
+                                byte b = (byte)(totalBlue / pixelCount);
+
+                                byte grey = (byte)((r + g + b) / 3);
+
+                                // Set colour for same area in new image
+                                for (uint newX = 0; newX < pixelIncrement; newX++)
+                                {
+                                    for (uint newY = 0; newY < pixelIncrement; newY++)
+                                    {
+                                        if (column + newX < editor.width && row + newY < editor.height)
+                                            newEditor.setPixel(column + newX, row + newY, grey, grey, grey);
+                                    }
+                                }
+
+                            }
+                            catch { }
+                        }
+                    }
+                }
+            }
+            SetImageOutput();
+        }
+
     }
 }

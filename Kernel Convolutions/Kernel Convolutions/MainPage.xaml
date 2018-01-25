@@ -40,8 +40,13 @@
 
             <StackPanel>
                 <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
-                <Slider Name="PixelationSlider" Minimum="4" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="5"/>
+                <Slider Name="PixelationSlider" Minimum="5" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="5"/>
                 <Button Name="PixelateButton" Content="Go" Click="PixelateButton_Click" IsEnabled="False"/>
+            </StackPanel>
+
+            <StackPanel>
+                <TextBlock Text="Greyscale" FontFamily="Bahnschrift" FontSize="24"/>
+                <Button Name="GreyscaleButton" Content="Go" Click="GreyscaleButton_Click" IsEnabled="False"/>
             </StackPanel>
 
         </StackPanel>
