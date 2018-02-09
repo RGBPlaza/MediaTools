@@ -98,7 +98,7 @@ namespace Kernel_Convolutions
             LoadImage();
             PixelateButton.IsEnabled = true;
             PixelationSlider.IsEnabled = true;
-
+            GreyscaleButton.IsEnabled = true;
         }
 
         private void PixelateButton_Click(object sender, RoutedEventArgs e)
@@ -228,7 +228,7 @@ namespace Kernel_Convolutions
                 newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width, editor.height, BitmapAlphaMode.Ignore);
                 using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
                 {
-                    pixelIncrement = originalPixelIncrement * (uint)PixelationSlider.Value;
+                    pixelIncrement = originalPixelIncrement;
                     SoftwareBitmapPixel pixel;
 
                     for (uint row = 0; row < editor.height; row += pixelIncrement)

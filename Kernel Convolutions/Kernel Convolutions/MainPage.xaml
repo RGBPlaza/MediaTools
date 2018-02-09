@@ -35,21 +35,38 @@
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Row="1" Text="Controls" Style="{StaticResource TitleTextBlock}"/>
-        
-        <StackPanel Grid.Row="2" Spacing="16">
 
-            <StackPanel>
-                <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
-                <Slider Name="PixelationSlider" Minimum="5" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="5"/>
-                <Button Name="PixelateButton" Content="Go" Click="PixelateButton_Click" IsEnabled="False"/>
-            </StackPanel>
+        <Pivot Grid.Row="2">
+            <PivotItem Header="Basics">
+                <StackPanel Spacing="16">
 
-            <StackPanel>
-                <TextBlock Text="Greyscale" FontFamily="Bahnschrift" FontSize="24"/>
-                <Button Name="GreyscaleButton" Content="Go" Click="GreyscaleButton_Click" IsEnabled="False"/>
-            </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Pixelate" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Slider Name="PixelationSlider" Minimum="5" Maximum="100" Header="Pixelation Factor" IsEnabled="False" StepFrequency="5"/>
+                        <Button Name="PixelateButton" Content="Go" Click="PixelateButton_Click" IsEnabled="False"/>
+                    </StackPanel>
 
-        </StackPanel>
+                    <StackPanel>
+                        <TextBlock Text="Greyscale" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Button Name="GreyscaleButton" Content="Go" Click="GreyscaleButton_Click" IsEnabled="False"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </PivotItem>
+            <PivotItem Header="Blurs">
+                <StackPanel Spacing="16">
+
+                    <StackPanel>
+                        <TextBlock Text="Gaussian" FontFamily="Bahnschrift" FontSize="24"/>
+                    </StackPanel>
+
+                    <StackPanel>
+                        <TextBlock Text="Mean" FontFamily="Bahnschrift" FontSize="24"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </PivotItem>
+        </Pivot>
 
         <Grid Padding="64,0" Grid.RowSpan="5" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
             <Grid.RowDefinitions>
