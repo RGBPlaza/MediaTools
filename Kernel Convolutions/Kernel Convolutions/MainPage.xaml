@@ -15,6 +15,18 @@
                 <Setter Property="FontWeight" Value="SemiLight"/>
                 <Setter Property="FontFamily" Value="Bahnschrift"/>
             </Style>
+            <Style x:Key="PixelTextBlock" TargetType="TextBlock">
+                <Setter Property="FontSize" Value="28"/>
+                <Setter Property="Height" Value="28"/>
+                <Setter Property="HorizontalTextAlignment" Value="Center"/>
+                <Setter Property="VerticalAlignment" Value="Center"/>
+                <Setter Property="FontWeight" Value="SemiLight"/>
+                <Setter Property="FontFamily" Value="Bahnschrift"/>
+            </Style>
+            <Style x:Key="PixelBorder" TargetType="Border">
+                <Setter Property="BorderBrush" Value="White"/>
+                <Setter Property="BorderThickness" Value="1"/>
+            </Style>
             <SolidColorBrush x:Key="SliderThumbBackground" Color="White"/>
             <SolidColorBrush x:Key="SliderTrackFill" Color="White"/>
             <SolidColorBrush x:Key="SliderTrackValueFill" Color="White"/>
@@ -27,6 +39,7 @@
             <RowDefinition Height="64"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="64"/>
+            <RowDefinition Height="64"/>
             <RowDefinition Height="16"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
@@ -37,7 +50,10 @@
         <TextBlock Grid.Row="1" Text="Controls" Style="{StaticResource TitleTextBlock}"/>
 
         <Pivot Grid.Row="2">
-            <PivotItem Header="Basics">
+            <PivotItem>
+                <PivotItem.Header>
+                    <TextBlock FontFamily="Bahnschrift" FontSize="28" Text="Basics" FontWeight="Normal"/>
+                </PivotItem.Header>
                 <StackPanel Spacing="16">
 
                     <StackPanel>
@@ -53,26 +69,46 @@
 
                 </StackPanel>
             </PivotItem>
-            <PivotItem Header="Blurs">
+            <PivotItem>
+                <PivotItem.Header>
+                    <TextBlock FontFamily="Bahnschrift" FontSize="28" Text="Blurs" FontWeight="Normal"/>
+                </PivotItem.Header>
                 <StackPanel Spacing="16">
 
                     <StackPanel>
                         <TextBlock Text="Gaussian" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Button Name="GaussianButton" Content="Go" Click="GaussianButton_Click" IsEnabled="False"/>
                     </StackPanel>
 
                     <StackPanel>
                         <TextBlock Text="Mean" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Button Name="MeanButton" Content="Go" Click="MeanButton_Click" IsEnabled="False"/>
+                    </StackPanel>
+
+                </StackPanel>
+            </PivotItem>
+            <PivotItem>
+                <PivotItem.Header>
+                    <TextBlock FontFamily="Bahnschrift" FontSize="28" Text="Edge Detection" FontWeight="Normal"/>
+                </PivotItem.Header>
+                <StackPanel Spacing="16">
+
+                    <StackPanel>
+                        <TextBlock Text="Sobel" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Button Name="SobelButton" Content="Go" Click="SobelButton_Click" IsEnabled="False"/>
                     </StackPanel>
 
                 </StackPanel>
             </PivotItem>
         </Pivot>
 
-        <Grid Padding="64,0" Grid.RowSpan="5" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
+        <Grid Padding="64,0" Grid.RowSpan="6" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
             <Grid.RowDefinitions>
                 <RowDefinition Height="16"/>
                 <RowDefinition Height="64"/>
+                <RowDefinition Height="2*"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="64"/>
                 <RowDefinition Height="64"/>
                 <RowDefinition Height="16"/>
             </Grid.RowDefinitions>
@@ -87,9 +123,202 @@
             <TextBlock Text="New Image" Grid.Row="1" Grid.Column="1" Style="{StaticResource TitleTextBlock}"/>
             <Image Name="NewImage" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Stretch"></Image>
 
+            <Grid Grid.Row="3" Grid.ColumnSpan="2" Padding="16" ColumnSpacing="16" RowSpacing="16" VerticalAlignment="Center" HorizontalAlignment="Center">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="auto"/>
+                    <RowDefinition Height="146"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="auto"/>
+                    <ColumnDefinition Width="28"/>
+                    <ColumnDefinition Width="auto"/>
+                </Grid.ColumnDefinitions>
+
+                <TextBlock Text="Kernel" Style="{StaticResource TitleTextBlock}" Grid.Column="0"/>
+                <TextBlock Text="Context" Style="{StaticResource TitleTextBlock}" Grid.Column="2"/>
+                <TextBlock Text="Result" Style="{StaticResource TitleTextBlock}" Grid.Column="4"/>
+                <TextBlock Text="Total" Style="{StaticResource TitleTextBlock}" Grid.Column="6"/>
+                <TextBlock Text="Pixel" Style="{StaticResource TitleTextBlock}" Grid.Column="8"/>
+
+                <Border BorderBrush="White" BorderThickness="1" Grid.Row="1" Grid.Column="0">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel00" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel01" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel02" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel10" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel11" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel12" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel20" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel21" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Kernel22" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="&#xE10A;" Style="{StaticResource TitleTextBlock}" FontFamily="Segoe MDL2 Assets" Grid.Row="1" Grid.Column="1"/>
+
+                <Border BorderBrush="White" BorderThickness="1" Grid.Row="1" Grid.Column="2">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context00" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context01" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context02" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context10" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context11" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context12" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context20" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context21" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Context22" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="&#xE111;" Style="{StaticResource TitleTextBlock}" FontFamily="Segoe MDL2 Assets" Grid.Row="1" Grid.Column="3"/>
+
+                <Border BorderBrush="White" BorderThickness="1" Grid.Row="1" Grid.Column="4">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                            <RowDefinition Height="48"/>
+                        </Grid.RowDefinitions>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                            <ColumnDefinition Width="48"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Grid.Row="0" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result00" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result01" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="0" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result02" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="1" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result10" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result11" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="1" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result12" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                        <Border Grid.Row="2" Grid.Column="0" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result20" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="1" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result21" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+                        <Border Grid.Row="2" Grid.Column="2" Style="{StaticResource PixelBorder}">
+                            <TextBlock Name="Result22" Style="{StaticResource PixelTextBlock}"/>
+                        </Border>
+
+                    </Grid>
+                </Border>
+
+                <TextBlock Text="&#xE111;" Style="{StaticResource TitleTextBlock}" FontFamily="Segoe MDL2 Assets" Grid.Row="1" Grid.Column="5"/>
+
+                <Grid Padding="0,24" Grid.Row="1" Grid.Column="6">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="48"/>
+                        <RowDefinition Height="2"/>
+                        <RowDefinition Height="48"/>
+                    </Grid.RowDefinitions>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="4"/>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="4"/>
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Name="ResultTotalTextBlock" Grid.Column="1" Style="{StaticResource TitleTextBlock}"/>
+                    <Rectangle Fill="White" Grid.Row="1" Grid.ColumnSpan="3"/>
+                    <TextBlock Name ="KernelTotalTextBlock" Grid.Row="2" Grid.Column="1" Style="{StaticResource TitleTextBlock}" Margin="0,16,0,0"/>
+                </Grid>
+
+                <TextBlock Text="&#xE111;" Style="{StaticResource TitleTextBlock}" FontFamily="Segoe MDL2 Assets" Grid.Row="1" Grid.Column="7"/>
+
+                <Border BorderBrush="White" BorderThickness="2" Width="48" Height="48" VerticalAlignment="Center" Grid.Row="1" Grid.Column="8">
+                    <TextBlock Name="NewPixelTextBlock" Style="{StaticResource TitleTextBlock}" Height="28"/>
+                </Border>
+
+            </Grid>
         </Grid>
 
-        <StackPanel Orientation="Horizontal" Grid.Row="3" Spacing="8">
+        <Slider Name="AnimationSpeedSlider" Grid.Row="3" Minimum="2" Maximum="100" Header="Animation Speed" IsEnabled="False" StepFrequency="2"/>
+        
+        <StackPanel Orientation="Horizontal" Spacing="8" Grid.Row="4">
             <Button Name="LoadImageButton" Content="Load" Click="LoadImageButton_Click"/>
             <Button Name="ResetButton" Content="Reset" Click="ResetButton_Click" IsEnabled="False"/>
             <Button Name="UpdateButton" Content="Update" Click="UpdateButton_Click" IsEnabled="False"/>
