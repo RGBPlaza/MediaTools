@@ -354,19 +354,27 @@ namespace Kernel_Convolutions
             }
         }
 
+        private enum Channel
+        {
+            red,
+            green,
+            blue,
+            grey
+        } 
+
         private async void RunConvolution()
         {
             try
             {
                 SetKernelDisplay();
                 pixelIncrement = originalPixelIncrement;
-
-                if (originalGreyscale)
+                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
                 {
-                    using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
+                    newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
+                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
                     {
-                        newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                        using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+
+                        if (originalGreyscale)
                         {
                             for (uint row = 0; row < editor.height; row += pixelIncrement)
                             {
@@ -416,249 +424,6 @@ namespace Kernel_Convolutions
                                                 {
                                                     var pixel = newEditor.getPixel(i, j);
                                                     previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                                }
-                                            }
-                                        }
-                                        await SetPreviewImage();
-                                    }
-                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
-                                }
-                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
-                                {
-                                    previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                    using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                    {
-                                        for (uint i = 0; i < previewEditor.width; i++)
-                                        {
-                                            for (uint j = 0; j < previewEditor.height; j++)
-                                            {
-                                                var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                            }
-                                        }
-                                    }
-                                    await SetPreviewImage();
-                                }
-                            }
-                        }
-                    }
-                    SetImageOutput();
-                }
-                else
-                {
-                    using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
-                    {
-                        SoftwareBitmap redBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                        using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(redBitmap))
-                        {
-                            for (uint row = 0; row < editor.height; row += pixelIncrement)
-                            {
-                                for (uint column = 0; column < editor.width; column += pixelIncrement)
-                                {
-                                    context = new int[3, 3];
-                                    result = new int[3, 3];
-                                    kernelTotal = 0;
-                                    resultTotal = 0;
-                                    NewPixel = 0;
-                                    for (int x = -1; x <= 1; x++)
-                                    {
-                                        for (int y = -1; y <= 1; y++)
-                                        {
-                                            var xPixel = column + (x * pixelIncrement);
-                                            var yPixel = row + (y * pixelIncrement);
-                                            if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
-                                            {
-                                                context[y + 1, x + 1] = editor.getPixel((uint)xPixel, (uint)yPixel).r;
-
-                                                result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
-                                                kernelTotal += kernel[y + 1, x + 1];
-                                                resultTotal += result[y + 1, x + 1];
-                                            }
-                                        }
-                                    }
-                                    NewPixel = resultTotal / kernelTotal;
-                                    SetResultDisplay();
-
-                                    // Set colour for area in new image
-                                    for (uint newX = 0; newX < pixelIncrement; newX++)
-                                    {
-                                        for (uint newY = 0; newY < pixelIncrement; newY++)
-                                        {
-                                            if (column + newX < newEditor.width && row + newY < newEditor.height)
-                                                newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, 0, 0);
-                                        }
-                                    }
-
-                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
-                                    {
-                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                        {
-                                            for (uint i = 0; i < previewEditor.width; i++)
-                                            {
-                                                for (uint j = 0; j < previewEditor.height; j++)
-                                                {
-                                                    var pixel = newEditor.getPixel(i, j);
-                                                    previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                                }
-                                            }
-                                        }
-                                        await SetPreviewImage();
-                                    }
-                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
-                                }
-                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
-                                {
-                                    previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                    using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                    {
-                                        for (uint i = 0; i < previewEditor.width; i++)
-                                        {
-                                            for (uint j = 0; j < previewEditor.height; j++)
-                                            {
-                                                var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                            }
-                                        }
-                                    }
-                                    await SetPreviewImage();
-                                }
-                            }
-                        }
-
-                        SoftwareBitmap greenBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                        using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(greenBitmap))
-                        {
-                            for (uint row = 0; row < editor.height; row += pixelIncrement)
-                            {
-                                for (uint column = 0; column < editor.width; column += pixelIncrement)
-                                {
-                                    context = new int[3, 3];
-                                    result = new int[3, 3];
-                                    kernelTotal = 0;
-                                    resultTotal = 0;
-                                    NewPixel = 0;
-                                    for (int x = -1; x <= 1; x++)
-                                    {
-                                        for (int y = -1; y <= 1; y++)
-                                        {
-                                            var xPixel = column + (x * pixelIncrement);
-                                            var yPixel = row + (y * pixelIncrement);
-                                            if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
-                                            {
-                                                context[y + 1, x + 1] = editor.getPixel((uint)xPixel, (uint)yPixel).g;
-
-                                                result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
-                                                kernelTotal += kernel[y + 1, x + 1];
-                                                resultTotal += result[y + 1, x + 1];
-                                            }
-                                        }
-                                    }
-                                    NewPixel = resultTotal / kernelTotal;
-                                    SetResultDisplay();
-
-                                    // Set colour for area in new image
-                                    for (uint newX = 0; newX < pixelIncrement; newX++)
-                                    {
-                                        for (uint newY = 0; newY < pixelIncrement; newY++)
-                                        {
-                                            if (column + newX < newEditor.width && row + newY < newEditor.height)
-                                                newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, (byte)NewPixel, (byte)NewPixel);
-                                        }
-                                    }
-
-                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
-                                    {
-                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                        {
-                                            for (uint i = 0; i < previewEditor.width; i++)
-                                            {
-                                                for (uint j = 0; j < previewEditor.height; j++)
-                                                {
-                                                    var pixel = newEditor.getPixel(i, j);
-                                                    previewEditor.setPixel(i, j, 0, pixel.g, 0);
-                                                }
-                                            }
-                                        }
-                                        await SetPreviewImage();
-                                    }
-                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
-                                }
-                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
-                                {
-                                    previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                    using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                    {
-                                        for (uint i = 0; i < previewEditor.width; i++)
-                                        {
-                                            for (uint j = 0; j < previewEditor.height; j++)
-                                            {
-                                                var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, 0, pixel.g, 0);
-                                            }
-                                        }
-                                    }
-                                    await SetPreviewImage();
-                                }
-                            }
-                        }
-
-                        SoftwareBitmap blueBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                        using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(blueBitmap))
-                        {
-                            for (uint row = 0; row < editor.height; row += pixelIncrement)
-                            {
-                                for (uint column = 0; column < editor.width; column += pixelIncrement)
-                                {
-                                    context = new int[3, 3];
-                                    result = new int[3, 3];
-                                    kernelTotal = 0;
-                                    resultTotal = 0;
-                                    NewPixel = 0;
-                                    for (int x = -1; x <= 1; x++)
-                                    {
-                                        for (int y = -1; y <= 1; y++)
-                                        {
-                                            var xPixel = column + (x * pixelIncrement);
-                                            var yPixel = row + (y * pixelIncrement);
-                                            if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
-                                            {
-                                                context[y + 1, x + 1] = editor.getPixel((uint)xPixel, (uint)yPixel).b;
-
-                                                result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
-                                                kernelTotal += kernel[y + 1, x + 1];
-                                                resultTotal += result[y + 1, x + 1];
-                                            }
-                                        }
-                                    }
-                                    NewPixel = resultTotal / kernelTotal;
-                                    SetResultDisplay();
-
-                                    // Set colour for area in new image
-                                    for (uint newX = 0; newX < pixelIncrement; newX++)
-                                    {
-                                        for (uint newY = 0; newY < pixelIncrement; newY++)
-                                        {
-                                            if (column + newX < newEditor.width && row + newY < newEditor.height)
-                                                newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, (byte)NewPixel, (byte)NewPixel);
-                                        }
-                                    }
-
-                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
-                                    {
-                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                        {
-                                            for (uint i = 0; i < previewEditor.width; i++)
-                                            {
-                                                for (uint j = 0; j < previewEditor.height; j++)
-                                                {
-                                                    var pixel = newEditor.getPixel(i, j);
-                                                    previewEditor.setPixel(i, j, 0, 0, pixel.b);
                                                 }
                                             }
                                         }
@@ -677,7 +442,7 @@ namespace Kernel_Convolutions
                                             for (uint j = 0; j < previewEditor.height; j++)
                                             {
                                                 var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, 0, 0, pixel.b);
+                                                previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
                                             }
                                         }
                                     }
@@ -685,31 +450,104 @@ namespace Kernel_Convolutions
                                 }
                             }
                         }
-
-                        newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                        using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+                        else
                         {
-                            SoftwareBitmapEditor rEditor = new SoftwareBitmapEditor(redBitmap);
-                            SoftwareBitmapEditor bEditor = new SoftwareBitmapEditor(greenBitmap);
-                            SoftwareBitmapEditor gEditor = new SoftwareBitmapEditor(blueBitmap);
-
-                            for (uint i = 0; i < newEditor.width; i++)
+                            foreach (Channel channel in new List<Channel> { Channel.red, Channel.green, Channel.blue })
                             {
-                                for (uint j = 0; j < newEditor.height; j++)
+                                for (uint row = 0; row < editor.height; row += pixelIncrement)
                                 {
-                                    byte r = rEditor.getPixel(i, j).r;
-                                    byte g = gEditor.getPixel(i, j).g;
-                                    byte b = bEditor.getPixel(i, j).b;
-                                    newEditor.setPixel(i, j, r, g, b);
+                                    for (uint column = 0; column < editor.width; column += pixelIncrement)
+                                    {
+                                        context = new int[3, 3];
+                                        result = new int[3, 3];
+                                        kernelTotal = 0;
+                                        resultTotal = 0;
+                                        NewPixel = 0;
+                                        for (int x = -1; x <= 1; x++)
+                                        {
+                                            for (int y = -1; y <= 1; y++)
+                                            {
+                                                var xPixel = column + (x * pixelIncrement);
+                                                var yPixel = row + (y * pixelIncrement);
+                                                if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
+                                                {
+                                                    SoftwareBitmapPixel p = editor.getPixel((uint)xPixel, (uint)yPixel);
+                                                    context[y + 1, x + 1] = channel == Channel.red ? p.r : channel == Channel.green ? p.g : p.b;
+
+                                                    result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
+                                                    kernelTotal += kernel[y + 1, x + 1];
+                                                    resultTotal += result[y + 1, x + 1];
+                                                }
+                                            }
+                                        }
+                                        NewPixel = resultTotal / kernelTotal;
+                                        SetResultDisplay();
+
+                                        // Set colour for area in new image
+                                        for (uint newX = 0; newX < pixelIncrement; newX++)
+                                        {
+                                            for (uint newY = 0; newY < pixelIncrement; newY++)
+                                            {
+                                                if (column + newX < newEditor.width && row + newY < newEditor.height)
+                                                {
+                                                    SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX, row + newY);
+
+                                                    if(channel == Channel.red)
+                                                        newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, currentPixel.b, currentPixel.g);
+                                                    else if(channel == Channel.blue)
+                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, (byte)NewPixel, currentPixel.g);
+                                                    else
+                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, currentPixel.b, (byte)NewPixel);
+
+                                                }
+                                            }
+                                        }
+
+                                        if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
+                                        {
+                                            previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                            using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                            {
+                                                for (uint newX = 0; newX < previewEditor.width; newX++)
+                                                {
+                                                    for (uint newY = 0; newY < previewEditor.height; newY++)
+                                                    {
+                                                        SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX, row + newY);
+
+                                                        if (channel == Channel.red)
+                                                            previewEditor.setPixel(column + newX, row + newY, (byte)NewPixel, 0, 0);
+                                                        else if (channel == Channel.blue)
+                                                            previewEditor.setPixel(column + newX, row + newY, 0, (byte)NewPixel, 0);
+                                                        else
+                                                            previewEditor.setPixel(column + newX, row + newY, 0, 0, (byte)NewPixel);
+                                                    }
+                                                }
+                                            }
+                                            await SetPreviewImage();
+                                        }
+                                        if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
+                                            await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                    }
+                                    if (AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
+                                    {
+                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                        {
+                                            for (uint i = 0; i < previewEditor.width; i++)
+                                            {
+                                                for (uint j = 0; j < previewEditor.height; j++)
+                                                {
+                                                    var pixel = newEditor.getPixel(i, j);
+                                                    previewEditor.setPixel(i, j, pixel.r, 0, 0);
+                                                }
+                                            }
+                                        }
+                                        await SetPreviewImage();
+                                    }
                                 }
                             }
-
-                            rEditor.Dispose();
-                            bEditor.Dispose();
-                            gEditor.Dispose();
+                            SetImageOutput();
                         }
-                        SetImageOutput();
-
                     }
                 }
             }
