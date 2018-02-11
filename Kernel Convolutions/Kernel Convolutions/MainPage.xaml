@@ -38,7 +38,7 @@
             <RowDefinition Height="16"/>
             <RowDefinition Height="64"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="64"/>
+            <RowDefinition Height="128"/>
             <RowDefinition Height="64"/>
             <RowDefinition Height="16"/>
         </Grid.RowDefinitions>
@@ -108,7 +108,7 @@
                 <RowDefinition Height="64"/>
                 <RowDefinition Height="2*"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="64"/>
+                <RowDefinition Height="128"/>
                 <RowDefinition Height="64"/>
                 <RowDefinition Height="16"/>
             </Grid.RowDefinitions>
@@ -316,7 +316,10 @@
             </Grid>
         </Grid>
 
-        <Slider Name="AnimationSpeedSlider" Grid.Row="3" Minimum="2" Maximum="100" Header="Animation Speed" IsEnabled="False" StepFrequency="2"/>
+        <StackPanel Grid.Row="3">
+            <ToggleSwitch Name="AnimationToggleSwitch" Header="Animations" IsOn="False" IsEnabled="False" Toggled="AnimationToggleSwitch_Toggled"/>
+            <Slider Name="AnimationSpeedSlider" Minimum="2" Maximum="100" Header="Animation Speed" StepFrequency="2" IsEnabled="False"/>
+        </StackPanel>
         
         <StackPanel Orientation="Horizontal" Spacing="8" Grid.Row="4">
             <Button Name="LoadImageButton" Content="Load" Click="LoadImageButton_Click"/>

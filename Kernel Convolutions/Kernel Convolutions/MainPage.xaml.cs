@@ -124,7 +124,7 @@ namespace Kernel_Convolutions
             GaussianButton.IsEnabled = true;
             MeanButton.IsEnabled = true;
             SobelButton.IsEnabled = true;
-            AnimationSpeedSlider.IsEnabled = true;
+            AnimationToggleSwitch.IsEnabled = true;
         }
 
         private async void SetImageOutput()
@@ -405,6 +405,27 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
+                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
+                                    {
+                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                        {
+                                            for (uint i = 0; i < previewEditor.width; i++)
+                                            {
+                                                for (uint j = 0; j < previewEditor.height; j++)
+                                                {
+                                                    var pixel = newEditor.getPixel(i, j);
+                                                    previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
+                                                }
+                                            }
+                                        }
+                                        await SetPreviewImage();
+                                    }
+                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
+                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                }
+                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
+                                {
                                     previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
                                     using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
                                     {
@@ -418,9 +439,6 @@ namespace Kernel_Convolutions
                                         }
                                     }
                                     await SetPreviewImage();
-
-                                    if (AnimationSpeedSlider.Value < 100)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
                                 }
                             }
                         }
@@ -472,6 +490,27 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
+                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
+                                    {
+                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                        {
+                                            for (uint i = 0; i < previewEditor.width; i++)
+                                            {
+                                                for (uint j = 0; j < previewEditor.height; j++)
+                                                {
+                                                    var pixel = newEditor.getPixel(i, j);
+                                                    previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
+                                                }
+                                            }
+                                        }
+                                        await SetPreviewImage();
+                                    }
+                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
+                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                }
+                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
+                                {
                                     previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
                                     using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
                                     {
@@ -485,9 +524,6 @@ namespace Kernel_Convolutions
                                         }
                                     }
                                     await SetPreviewImage();
-                                    
-                                    if(AnimationSpeedSlider.Value < 100)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
                                 }
                             }
                         }
@@ -533,6 +569,27 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
+                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
+                                    {
+                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                        {
+                                            for (uint i = 0; i < previewEditor.width; i++)
+                                            {
+                                                for (uint j = 0; j < previewEditor.height; j++)
+                                                {
+                                                    var pixel = newEditor.getPixel(i, j);
+                                                    previewEditor.setPixel(i, j, 0, pixel.g, 0);
+                                                }
+                                            }
+                                        }
+                                        await SetPreviewImage();
+                                    }
+                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
+                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                }
+                                if(AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
+                                {
                                     previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
                                     using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
                                     {
@@ -541,14 +598,11 @@ namespace Kernel_Convolutions
                                             for (uint j = 0; j < previewEditor.height; j++)
                                             {
                                                 var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, 0, pixel.g,0);
+                                                previewEditor.setPixel(i, j, 0, pixel.g, 0);
                                             }
                                         }
                                     }
                                     await SetPreviewImage();
-                                    
-                                    if (AnimationSpeedSlider.Value < 100)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
                                 }
                             }
                         }
@@ -594,6 +648,27 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
+                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
+                                    {
+                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
+                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
+                                        {
+                                            for (uint i = 0; i < previewEditor.width; i++)
+                                            {
+                                                for (uint j = 0; j < previewEditor.height; j++)
+                                                {
+                                                    var pixel = newEditor.getPixel(i, j);
+                                                    previewEditor.setPixel(i, j, 0, 0, pixel.b);
+                                                }
+                                            }
+                                        }
+                                        await SetPreviewImage();
+                                    }
+                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
+                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                }
+                                if (AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
+                                {
                                     previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
                                     using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
                                     {
@@ -607,9 +682,6 @@ namespace Kernel_Convolutions
                                         }
                                     }
                                     await SetPreviewImage();
-
-                                    if (AnimationSpeedSlider.Value < 100)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
                                 }
                             }
                         }
@@ -660,6 +732,11 @@ namespace Kernel_Convolutions
         {/*
             kernel = new int[3, 3] { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } };
             RunConvolution();*/
+        }
+
+        private void AnimationToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            AnimationSpeedSlider.IsEnabled = AnimationToggleSwitch.IsOn;
         }
     }
 }
