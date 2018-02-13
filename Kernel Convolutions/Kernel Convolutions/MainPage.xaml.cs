@@ -27,24 +27,13 @@ using System.Collections.ObjectModel;
 
 namespace Kernel_Convolutions
 {
-    /// <summary>
-    /// An empty page that can be used on its own or navigated to within a Frame.
-    /// </summary>
+
     public sealed partial class MainPage : Page
     {
         public MainPage()
         {
             this.InitializeComponent();
         }
-
-        private StorageFile originalImage;
-        private SoftwareBitmap softwareBitmap;
-        private uint originalPixelIncrement = 1;
-        private SoftwareBitmap newSoftwareBitmap;
-        private SoftwareBitmap previewBitmap;
-        private uint pixelIncrement;
-        private bool originalGreyscale = false;
-        private bool resultGreyscale = false;
 
         private bool IsGreyScale(SoftwareBitmap bitmap)
         {
@@ -64,38 +53,40 @@ namespace Kernel_Convolutions
 
         private async void LoadImage()
         {
-            using (var stream = await originalImage.OpenAsync(FileAccessMode.Read))
+            using (var stream = await ImageData.OriginalFile.OpenAsync(FileAccessMode.Read))
             {
                 // this is a PNG file so we need to decode it to raw pixel data.
                 var bitmapDecoder = await BitmapDecoder.CreateAsync(stream);
-
+                
                 // grab the pixels in a byte[] array.
                 var pixelProvider = await bitmapDecoder.GetPixelDataAsync();
                 var bits = pixelProvider.DetachPixelData();
 
                 // make a software bitmap to decode it into
-                softwareBitmap = new SoftwareBitmap(
+                ImageData.OriginalBitmap = new SoftwareBitmap(
                   BitmapPixelFormat.Bgra8,
                   (int)bitmapDecoder.PixelWidth,
                   (int)bitmapDecoder.PixelHeight,
                   BitmapAlphaMode.Premultiplied);
 
                 // copy the pixels.
-                softwareBitmap.CopyFromBuffer(bits.AsBuffer());
+                ImageData.OriginalBitmap.CopyFromBuffer(bits.AsBuffer());
 
                 // we now need something to glue this into a XAML Image object via
                 // something derived from ImageSource.
-                var softwareBitmapSource = new SoftwareBitmapSource();
-                await softwareBitmapSource.SetBitmapAsync(softwareBitmap);
+                var originalBitmapSource = new SoftwareBitmapSource();
+                await originalBitmapSource.SetBitmapAsync(ImageData.OriginalBitmap);
 
-                OriginalImage.Source = softwareBitmapSource;
+                OriginalImage.Source = originalBitmapSource;
             }
 
+            ImageData.OriginalPixelIncrement = 1;
+            ImageData.OriginalGreyscale = IsGreyScale(ImageData.OriginalBitmap);
+            ImageData.ResultGreyscale = ImageData.OriginalGreyscale;
+            ImageData.NewBitmap = null;
+
             NewImage.Source = null;
-            originalPixelIncrement = 1;
-            originalGreyscale = IsGreyScale(softwareBitmap);
-            resultGreyscale = originalGreyscale;
-            newSoftwareBitmap = null;
+
             UpdateButton.IsEnabled = false;
             SaveButton.IsEnabled = false;
             ResetButton.IsEnabled = false;
@@ -112,12 +103,13 @@ namespace Kernel_Convolutions
             fileOpenPicker.ViewMode = PickerViewMode.Thumbnail;
 
             // Open a well-known image file created by Visual Studio template.
-            originalImage = await fileOpenPicker.PickSingleFileAsync();
+            ImageData.OriginalFile = await fileOpenPicker.PickSingleFileAsync();
 
-            if (originalImage == null)
+            if (ImageData.OriginalFile == null)
                 return;
 
             LoadImage();
+
             PixelateButton.IsEnabled = true;
             PixelationSlider.IsEnabled = true;
             GreyscaleButton.IsEnabled = true;
@@ -129,21 +121,21 @@ namespace Kernel_Convolutions
 
         private async void SetImageOutput()
         {
-            var softwareBitmapSource = new SoftwareBitmapSource();
-            await softwareBitmapSource.SetBitmapAsync(newSoftwareBitmap);
+            var originalBitmapSource = new SoftwareBitmapSource();
+            await originalBitmapSource.SetBitmapAsync(ImageData.NewBitmap);
 
-            NewImage.Source = softwareBitmapSource;
+            NewImage.Source = originalBitmapSource;
             UpdateButton.IsEnabled = true;
             SaveButton.IsEnabled = true;
             ResetButton.IsEnabled = true;
         }
 
-        private async Task SetPreviewImage()
+        public async Task SetPreviewImage()
         {
-            var softwareBitmapSource = new SoftwareBitmapSource();
-            await softwareBitmapSource.SetBitmapAsync(previewBitmap);
+            var originalBitmapSource = new SoftwareBitmapSource();
+            await originalBitmapSource.SetBitmapAsync(ImageData.PreviewBitmap);
 
-            NewImage.Source = softwareBitmapSource;
+            NewImage.Source = originalBitmapSource;
         }
 
         private void ResetButton_Click(object sender, RoutedEventArgs e)
@@ -153,13 +145,13 @@ namespace Kernel_Convolutions
 
         private async void SaveButton_Click(object sender, RoutedEventArgs e)
         {
-            if (originalImage == null)
+            if (ImageData.OriginalFile == null)
                 return;
 
             FileSavePicker fileSavePicker = new FileSavePicker
             {
                 SuggestedStartLocation = PickerLocationId.PicturesLibrary,
-                SuggestedFileName = originalImage.DisplayName + "(edited)"
+                SuggestedFileName = ImageData.OriginalFile.DisplayName + "(edited)"
             };
             fileSavePicker.FileTypeChoices.Add("PNG", new List<string> { ".png" });
             fileSavePicker.FileTypeChoices.Add("JPEG", new List<string> { ".jpg" });
@@ -176,7 +168,7 @@ namespace Kernel_Convolutions
                 Guid encoderId = saveFile.FileType == ".jpg" ? BitmapEncoder.JpegEncoderId : BitmapEncoder.PngEncoderId;
                 var bitmapEncoder = await BitmapEncoder.CreateAsync(encoderId, stream);
 
-                bitmapEncoder.SetSoftwareBitmap(newSoftwareBitmap);
+                bitmapEncoder.SetSoftwareBitmap(ImageData.NewBitmap);
                 await bitmapEncoder.FlushAsync();
             }
 
@@ -184,40 +176,40 @@ namespace Kernel_Convolutions
 
         private async void UpdateButton_Click(object sender, RoutedEventArgs e)
         {
-            originalPixelIncrement = pixelIncrement;
-            originalGreyscale = resultGreyscale;
-            softwareBitmap = newSoftwareBitmap;
+            ImageData.OriginalPixelIncrement = ImageData.PixelIncrement;
+            ImageData.OriginalGreyscale = ImageData.ResultGreyscale;
+            ImageData.OriginalBitmap = ImageData.NewBitmap;
 
-            var softwareBitmapSource = new SoftwareBitmapSource();
-            await softwareBitmapSource.SetBitmapAsync(softwareBitmap);
+            var originalBitmapSource = new SoftwareBitmapSource();
+            await originalBitmapSource.SetBitmapAsync(ImageData.OriginalBitmap);
 
-            OriginalImage.Source = softwareBitmapSource;
+            OriginalImage.Source = originalBitmapSource;
         }
 
         private void PixelateButton_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                pixelIncrement = originalPixelIncrement * (uint)PixelationSlider.Value;
-                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
+                ImageData.PixelIncrement = ImageData.OriginalPixelIncrement * (uint)PixelationSlider.Value;
+                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(ImageData.OriginalBitmap))
                 {
-                    newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+                    ImageData.NewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(ImageData.NewBitmap))
                     {
                         SoftwareBitmapPixel pixel;
-                        for (uint row = 0; row < editor.height; row += pixelIncrement)
+                        for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
                         {
-                            for (uint column = 0; column < editor.width; column += pixelIncrement)
+                            for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
                             {
-                                int pixelCount = (int)Math.Pow(pixelIncrement, 2);
+                                int pixelCount = (int)Math.Pow(ImageData.PixelIncrement, 2);
                                 int totalRed = 0;
                                 int totalGreen = 0;
                                 int totalBlue = 0;
 
                                 // Fetch the colour values for area in original image
-                                for (uint x = 0; x < pixelIncrement; x++)
+                                for (uint x = 0; x < ImageData.PixelIncrement; x++)
                                 {
-                                    for (uint y = 0; y < pixelIncrement; y++)
+                                    for (uint y = 0; y < ImageData.PixelIncrement; y++)
                                     {
                                         if (column + x < editor.width && row + y < editor.height)
                                         {
@@ -236,9 +228,9 @@ namespace Kernel_Convolutions
                                 byte b = (byte)(totalBlue / pixelCount);
 
                                 // Set colour for same area in new image
-                                for (uint newX = 0; newX < pixelIncrement; newX++)
+                                for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                 {
-                                    for (uint newY = 0; newY < pixelIncrement; newY++)
+                                    for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                     {
                                         if (column + newX < newEditor.width && row + newY < newEditor.height)
                                             newEditor.setPixel(column + newX, row + newY, r, g, b);
@@ -257,27 +249,27 @@ namespace Kernel_Convolutions
         {
             try
             {
-                pixelIncrement = originalPixelIncrement;
-                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
+                ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
+                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(ImageData.OriginalBitmap))
                 {
-                    newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+                    ImageData.NewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(ImageData.NewBitmap))
                     {
                         SoftwareBitmapPixel pixel;
 
-                        for (uint row = 0; row < editor.height; row += pixelIncrement)
+                        for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
                         {
-                            for (uint column = 0; column < editor.width; column += pixelIncrement)
+                            for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
                             {
-                                int pixelCount = (int)Math.Pow(pixelIncrement, 2);
+                                int pixelCount = (int)Math.Pow(ImageData.PixelIncrement, 2);
                                 int totalRed = 0;
                                 int totalGreen = 0;
                                 int totalBlue = 0;
 
                                 // Fetch the colour values for area in original image
-                                for (uint x = 0; x < pixelIncrement; x++)
+                                for (uint x = 0; x < ImageData.PixelIncrement; x++)
                                 {
-                                    for (uint y = 0; y < pixelIncrement; y++)
+                                    for (uint y = 0; y < ImageData.PixelIncrement; y++)
                                     {
                                         if (column + x < editor.width && row + y < editor.height)
                                         {
@@ -299,9 +291,9 @@ namespace Kernel_Convolutions
                                 byte grey = (byte)((r + g + b) / 3);
 
                                 // Set colour for same area in new image
-                                for (uint newX = 0; newX < pixelIncrement; newX++)
+                                for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                 {
-                                    for (uint newY = 0; newY < pixelIncrement; newY++)
+                                    for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                     {
                                         if (column + newX < newEditor.width && row + newY < newEditor.height)
                                             newEditor.setPixel(column + newX, row + newY, grey, grey, grey);
@@ -311,20 +303,13 @@ namespace Kernel_Convolutions
                         }
                     }
                 }
-                resultGreyscale = true;
+                ImageData.ResultGreyscale = true;
                 SetImageOutput();
             }
             catch { }
         }
-
-        private int[,] kernel;
-        private int[,] context;
-        private int[,] result;
-        private int resultTotal;
-        private int kernelTotal;
-        private int NewPixel;
-
-        private void SetKernelDisplay()
+        
+        public void SetKernelDisplay(int[,] kernel)
         {
             for (int i = 0; i < 3; i++)
             {
@@ -336,7 +321,7 @@ namespace Kernel_Convolutions
             }
         }
 
-        private void SetResultDisplay()
+        public void SetResultDisplay(int[,] context, int[,] result, int resultTotal, int kernelTotal, int newPixelValue)
         {
             for (int i = 0; i < 3; i++)
             {
@@ -350,231 +335,308 @@ namespace Kernel_Convolutions
                 }
                 ResultTotalTextBlock.Text = resultTotal.ToString();
                 KernelTotalTextBlock.Text = kernelTotal.ToString();
-                NewPixelTextBlock.Text = NewPixel.ToString();
+                NewPixelTextBlock.Text = newPixelValue.ToString();
             }
         }
 
-        private enum Channel
+        private async void GaussianButton_Click(object sender, RoutedEventArgs e)
         {
-            red,
-            green,
-            blue,
-            grey
-        } 
+            Convolution convolution = new Convolution(new int[3, 3] { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap);
+            ImageData.NewBitmap = await convolution.Run();
+            SetImageOutput();
+        }
 
-        private async void RunConvolution()
+        private async void MeanButton_Click(object sender, RoutedEventArgs e)
+        {
+            Convolution convolution = new Convolution(new int[3, 3] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } }, this, ImageData.OriginalBitmap);
+            ImageData.NewBitmap = await convolution.Run();
+            SetImageOutput();
+        }
+
+        private async void SobelButton_Click(object sender, RoutedEventArgs e)
+        {
+            Convolution gX = new Convolution(new int[3, 3] { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } }, this, ImageData.OriginalBitmap, 1);
+            ImageData.NewBitmap = await gX.Run();
+
+            SetImageOutput();
+
+            Convolution gY = new Convolution(new int[3, 3] { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap, 1);
+            ImageData.NewBitmap = await gY.Run();
+
+            SetImageOutput();
+        }
+
+        private void AnimationToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            AnimationSpeedSlider.IsEnabled = AnimationToggleSwitch.IsOn;
+            ImageData.AnimationsOn = AnimationToggleSwitch.IsOn;
+        }
+
+        private void AnimationSpeedSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
+        {
+            ImageData.AnimationMode = (int)e.NewValue;
+        }
+    }
+
+    public enum Channel
+    {
+        red,
+        green,
+        blue,
+        grey
+    }
+    public class Convolution
+    {
+
+        private MainPage Page;
+        private SoftwareBitmap SourceBitmap;
+
+        public Convolution(int[,] kernel, MainPage page, SoftwareBitmap source, int divisor = 0)
+        {
+            Kernel = kernel;
+            KernelSize = (int)Math.Sqrt(kernel.Length);
+
+            Page = page;
+            SourceBitmap = source;
+
+            if(divisor != 0)
+            {
+                KernelTotal = divisor;
+                CalculateDivisor = false;
+            }
+
+        }
+
+        public int[,] Kernel { get; private set; }
+        private int KernelSize;
+
+        private bool CalculateDivisor = true;
+        public int KernelTotal { get; private set; }
+
+        private async Task RunKernelAnimation(SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue)
+        {
+            Page.SetResultDisplay(context, result, resultTotal, KernelTotal, newPixelValue);
+            ImageData.PreviewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width, editor.height, BitmapAlphaMode.Premultiplied);
+            using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(ImageData.PreviewBitmap))
+            {
+                for (uint x = 0; x < previewEditor.width; x++)
+                {
+                    for (uint y = 0; y < previewEditor.height; y++)
+                    {
+                        SoftwareBitmapPixel pixel = editor.getPixel(x, y);
+
+                        if (channel == Channel.grey)
+                            previewEditor.setPixel(x, y, pixel.r, pixel.g, pixel.b);
+                        else if (channel == Channel.red)
+                            previewEditor.setPixel(x, y, pixel.r, 0, 0);
+                        else if (channel == Channel.blue)
+                            previewEditor.setPixel(x, y, 0, 0, pixel.b);
+                        else
+                            previewEditor.setPixel(x, y, 0, pixel.g, 0);
+                    }
+                }
+            }
+            await Page.SetPreviewImage();
+        }
+
+        private async Task TryAnimateKernel(bool isFast, SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue)
+        {
+            if (ImageData.AnimationsOn)
+            {
+                switch (ImageData.AnimationMode)
+                {
+                    case 1:
+                        if (!isFast)
+                        {
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await Task.Delay(500);
+                        }
+                        break;
+                    case 2:
+                        if (!isFast)
+                        {
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await Task.Delay(100);
+                        }
+                        break;
+                    case 3:
+                        if (!isFast)
+                        {
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await Task.Delay(10);
+                        }
+                        break;
+                    case 4:
+                        if (!isFast)
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                        break;
+                    case 5:
+                        if (isFast)
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                        break;
+                }
+            }
+        }
+
+        public async Task<SoftwareBitmap> Run()
         {
             try
             {
-                SetKernelDisplay();
-                pixelIncrement = originalPixelIncrement;
-                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(softwareBitmap))
+                int[,] context = new int[KernelSize, KernelSize];
+                int[,] result = new int[KernelSize, KernelSize];
+                int resultTotal = 0;
+                int newPixelValue = 0;
+
+                Page.SetKernelDisplay(Kernel);
+                ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
+
+                SoftwareBitmap resultBitmap;
+
+                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(SourceBitmap))
                 {
-                    newSoftwareBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % pixelIncrement), editor.height - (int)(editor.height % pixelIncrement), BitmapAlphaMode.Ignore);
-                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(newSoftwareBitmap))
+                    resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(resultBitmap))
                     {
 
-                        if (originalGreyscale)
+                        if (ImageData.OriginalGreyscale)
                         {
-                            for (uint row = 0; row < editor.height; row += pixelIncrement)
+                            for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
                             {
-                                for (uint column = 0; column < editor.width; column += pixelIncrement)
+                                for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
                                 {
-                                    context = new int[3, 3];
-                                    result = new int[3, 3];
-                                    kernelTotal = 0;
+                                    context = new int[KernelSize, KernelSize];
+                                    result = new int[KernelSize, KernelSize];
                                     resultTotal = 0;
-                                    NewPixel = 0;
+                                    newPixelValue = 0;
+                                    
+                                    if(CalculateDivisor)
+                                        KernelTotal = 0;
+
                                     for (int x = -1; x <= 1; x++)
                                     {
                                         for (int y = -1; y <= 1; y++)
                                         {
-                                            var xPixel = column + (x * pixelIncrement);
-                                            var yPixel = row + (y * pixelIncrement);
+                                            var xPixel = column + (x * ImageData.PixelIncrement);
+                                            var yPixel = row + (y * ImageData.PixelIncrement);
                                             if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
                                             {
                                                 context[y + 1, x + 1] = editor.getPixel((uint)xPixel, (uint)yPixel).r;
-                                                result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
-                                                kernelTotal += kernel[y + 1, x + 1];
+                                                result[y + 1, x + 1] = context[y + 1, x + 1] * Kernel[y + 1, x + 1];
                                                 resultTotal += result[y + 1, x + 1];
+
+                                                if (CalculateDivisor)
+                                                    KernelTotal += Kernel[y + 1, x + 1];
                                             }
                                         }
                                     }
-                                    NewPixel = resultTotal / kernelTotal;
-                                    SetResultDisplay();
+
+                                    newPixelValue = resultTotal / KernelTotal;
 
                                     // Set colour for area in new image
-                                    for (uint newX = 0; newX < pixelIncrement; newX++)
+                                    for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                     {
-                                        for (uint newY = 0; newY < pixelIncrement; newY++)
+                                        for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                         {
                                             if (column + newX < newEditor.width && row + newY < newEditor.height)
-                                                newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, (byte)NewPixel, (byte)NewPixel);
+                                                newEditor.setPixel(column + newX, row + newY, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
                                         }
                                     }
 
-                                    if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
-                                    {
-                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                        {
-                                            for (uint i = 0; i < previewEditor.width; i++)
-                                            {
-                                                for (uint j = 0; j < previewEditor.height; j++)
-                                                {
-                                                    var pixel = newEditor.getPixel(i, j);
-                                                    previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                                }
-                                            }
-                                        }
-                                        await SetPreviewImage();
-                                    }
-                                    if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
-                                        await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                    await TryAnimateKernel(false, newEditor, Channel.grey, context, result, resultTotal, newPixelValue);
                                 }
-                                if (AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
-                                {
-                                    previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                    using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                    {
-                                        for (uint i = 0; i < previewEditor.width; i++)
-                                        {
-                                            for (uint j = 0; j < previewEditor.height; j++)
-                                            {
-                                                var pixel = newEditor.getPixel(i, j);
-                                                previewEditor.setPixel(i, j, pixel.r, pixel.g, pixel.b);
-                                            }
-                                        }
-                                    }
-                                    await SetPreviewImage();
-                                }
+                                await TryAnimateKernel(true, newEditor, Channel.grey, context, result, resultTotal, newPixelValue);
                             }
                         }
                         else
                         {
                             foreach (Channel channel in new List<Channel> { Channel.red, Channel.green, Channel.blue })
                             {
-                                for (uint row = 0; row < editor.height; row += pixelIncrement)
+                                for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
                                 {
-                                    for (uint column = 0; column < editor.width; column += pixelIncrement)
+                                    for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
                                     {
-                                        context = new int[3, 3];
-                                        result = new int[3, 3];
-                                        kernelTotal = 0;
+                                        context = new int[KernelSize, KernelSize];
+                                        result = new int[KernelSize, KernelSize];
                                         resultTotal = 0;
-                                        NewPixel = 0;
+                                        newPixelValue = 0;
+
+                                        if(CalculateDivisor)
+                                            KernelTotal = 0;
+
                                         for (int x = -1; x <= 1; x++)
                                         {
                                             for (int y = -1; y <= 1; y++)
                                             {
-                                                var xPixel = column + (x * pixelIncrement);
-                                                var yPixel = row + (y * pixelIncrement);
+                                                var xPixel = column + (x * ImageData.PixelIncrement);
+                                                var yPixel = row + (y * ImageData.PixelIncrement);
                                                 if (xPixel >= 0 && xPixel < editor.width && yPixel >= 0 && yPixel < editor.height)
                                                 {
                                                     SoftwareBitmapPixel p = editor.getPixel((uint)xPixel, (uint)yPixel);
                                                     context[y + 1, x + 1] = channel == Channel.red ? p.r : channel == Channel.green ? p.g : p.b;
 
-                                                    result[y + 1, x + 1] = context[y + 1, x + 1] * kernel[y + 1, x + 1];
-                                                    kernelTotal += kernel[y + 1, x + 1];
+                                                    result[y + 1, x + 1] = context[y + 1, x + 1] * Kernel[y + 1, x + 1];
                                                     resultTotal += result[y + 1, x + 1];
+
+                                                    if(CalculateDivisor)
+                                                        KernelTotal += Kernel[y + 1, x + 1];
                                                 }
                                             }
                                         }
-                                        NewPixel = resultTotal / kernelTotal;
-                                        SetResultDisplay();
+
+                                        newPixelValue = resultTotal / KernelTotal;
 
                                         // Set colour for area in new image
-                                        for (uint newX = 0; newX < pixelIncrement; newX++)
+                                        for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                         {
-                                            for (uint newY = 0; newY < pixelIncrement; newY++)
+                                            for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                             {
                                                 if (column + newX < newEditor.width && row + newY < newEditor.height)
                                                 {
                                                     SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX, row + newY);
 
-                                                    if(channel == Channel.red)
-                                                        newEditor.setPixel(column + newX, row + newY, (byte)NewPixel, currentPixel.b, currentPixel.g);
-                                                    else if(channel == Channel.blue)
-                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, (byte)NewPixel, currentPixel.g);
+                                                    if (channel == Channel.red)
+                                                        newEditor.setPixel(column + newX, row + newY, (byte)newPixelValue, currentPixel.b, currentPixel.g);
+                                                    else if (channel == Channel.blue)
+                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, (byte)newPixelValue, currentPixel.g);
                                                     else
-                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, currentPixel.b, (byte)NewPixel);
+                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, currentPixel.b, (byte)newPixelValue);
 
                                                 }
                                             }
                                         }
 
-                                        if (AnimationSpeedSlider.Value < 100 && AnimationToggleSwitch.IsOn)
-                                        {
-                                            previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                            using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                            {
-                                                for (uint newX = 0; newX < previewEditor.width; newX++)
-                                                {
-                                                    for (uint newY = 0; newY < previewEditor.height; newY++)
-                                                    {
-                                                        SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX, row + newY);
-
-                                                        if (channel == Channel.red)
-                                                            previewEditor.setPixel(column + newX, row + newY, (byte)NewPixel, 0, 0);
-                                                        else if (channel == Channel.blue)
-                                                            previewEditor.setPixel(column + newX, row + newY, 0, (byte)NewPixel, 0);
-                                                        else
-                                                            previewEditor.setPixel(column + newX, row + newY, 0, 0, (byte)NewPixel);
-                                                    }
-                                                }
-                                            }
-                                            await SetPreviewImage();
-                                        }
-                                        if (AnimationSpeedSlider.Value < 96 && AnimationToggleSwitch.IsOn)
-                                            await Task.Delay((int)(1000 / AnimationSpeedSlider.Value));
+                                        await TryAnimateKernel(false, newEditor, channel, context, result, resultTotal, newPixelValue);
                                     }
-                                    if (AnimationSpeedSlider.Value == 100 && AnimationToggleSwitch.IsOn)
-                                    {
-                                        previewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newEditor.width, newEditor.height, BitmapAlphaMode.Premultiplied);
-                                        using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(previewBitmap))
-                                        {
-                                            for (uint i = 0; i < previewEditor.width; i++)
-                                            {
-                                                for (uint j = 0; j < previewEditor.height; j++)
-                                                {
-                                                    var pixel = newEditor.getPixel(i, j);
-                                                    previewEditor.setPixel(i, j, pixel.r, 0, 0);
-                                                }
-                                            }
-                                        }
-                                        await SetPreviewImage();
-                                    }
+                                    await TryAnimateKernel(true, newEditor, channel, context, result, resultTotal, newPixelValue);
                                 }
                             }
-                            SetImageOutput();
                         }
                     }
                 }
+                return resultBitmap;
             }
-            catch { }
-        }
-
-        private void GaussianButton_Click(object sender, RoutedEventArgs e)
-        {
-            kernel = new int[3,3] { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } };
-            RunConvolution();
-        }
-
-        private void MeanButton_Click(object sender, RoutedEventArgs e)
-        {
-            kernel = new int[3, 3] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
-            RunConvolution();
-        }
-
-        private void SobelButton_Click(object sender, RoutedEventArgs e)
-        {/*
-            kernel = new int[3, 3] { { -1, 0, 1 }, { -1, 0, 1 }, { -1, 0, 1 } };
-            RunConvolution();*/
-        }
-
-        private void AnimationToggleSwitch_Toggled(object sender, RoutedEventArgs e)
-        {
-            AnimationSpeedSlider.IsEnabled = AnimationToggleSwitch.IsOn;
+            catch {
+                return SourceBitmap;
+            }
         }
     }
+
+    public static class ImageData
+    {
+        public static StorageFile OriginalFile;
+
+        public static SoftwareBitmap OriginalBitmap;
+        public static SoftwareBitmap NewBitmap;
+        public static SoftwareBitmap PreviewBitmap;
+
+        public static uint OriginalPixelIncrement = 1;
+        public static uint PixelIncrement = 1;
+
+        public static bool OriginalGreyscale = false;
+        public static bool ResultGreyscale = false;
+
+        public static bool AnimationsOn;
+        public static int AnimationMode;
+    }
+
 }
