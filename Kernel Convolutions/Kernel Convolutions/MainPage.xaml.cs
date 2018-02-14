@@ -53,43 +53,47 @@ namespace Kernel_Convolutions
 
         private async void LoadImage()
         {
-            using (var stream = await ImageData.OriginalFile.OpenAsync(FileAccessMode.Read))
+            try
             {
-                // this is a PNG file so we need to decode it to raw pixel data.
-                var bitmapDecoder = await BitmapDecoder.CreateAsync(stream);
-                
-                // grab the pixels in a byte[] array.
-                var pixelProvider = await bitmapDecoder.GetPixelDataAsync();
-                var bits = pixelProvider.DetachPixelData();
+                using (var stream = await ImageData.OriginalFile.OpenAsync(FileAccessMode.Read))
+                {
+                    // this is a PNG file so we need to decode it to raw pixel data.
+                    var bitmapDecoder = await BitmapDecoder.CreateAsync(stream);
 
-                // make a software bitmap to decode it into
-                ImageData.OriginalBitmap = new SoftwareBitmap(
-                  BitmapPixelFormat.Bgra8,
-                  (int)bitmapDecoder.PixelWidth,
-                  (int)bitmapDecoder.PixelHeight,
-                  BitmapAlphaMode.Premultiplied);
+                    // grab the pixels in a byte[] array.
+                    var pixelProvider = await bitmapDecoder.GetPixelDataAsync();
+                    var bits = pixelProvider.DetachPixelData();
 
-                // copy the pixels.
-                ImageData.OriginalBitmap.CopyFromBuffer(bits.AsBuffer());
+                    // make a software bitmap to decode it into
+                    ImageData.OriginalBitmap = new SoftwareBitmap(
+                      BitmapPixelFormat.Bgra8,
+                      (int)bitmapDecoder.PixelWidth,
+                      (int)bitmapDecoder.PixelHeight,
+                      BitmapAlphaMode.Premultiplied);
 
-                // we now need something to glue this into a XAML Image object via
-                // something derived from ImageSource.
-                var originalBitmapSource = new SoftwareBitmapSource();
-                await originalBitmapSource.SetBitmapAsync(ImageData.OriginalBitmap);
+                    // copy the pixels.
+                    ImageData.OriginalBitmap.CopyFromBuffer(bits.AsBuffer());
 
-                OriginalImage.Source = originalBitmapSource;
+                    // we now need something to glue this into a XAML Image object via
+                    // something derived from ImageSource.
+                    var originalBitmapSource = new SoftwareBitmapSource();
+                    await originalBitmapSource.SetBitmapAsync(ImageData.OriginalBitmap);
+
+                    OriginalImage.Source = originalBitmapSource;
+                }
+
+                ImageData.OriginalPixelIncrement = 1;
+                ImageData.OriginalGreyscale = IsGreyScale(ImageData.OriginalBitmap);
+                ImageData.ResultGreyscale = ImageData.OriginalGreyscale;
+                ImageData.NewBitmap = null;
+
+                NewImage.Source = null;
+
+                UpdateButton.IsEnabled = false;
+                SaveButton.IsEnabled = false;
+                ResetButton.IsEnabled = false;
             }
-
-            ImageData.OriginalPixelIncrement = 1;
-            ImageData.OriginalGreyscale = IsGreyScale(ImageData.OriginalBitmap);
-            ImageData.ResultGreyscale = ImageData.OriginalGreyscale;
-            ImageData.NewBitmap = null;
-
-            NewImage.Source = null;
-
-            UpdateButton.IsEnabled = false;
-            SaveButton.IsEnabled = false;
-            ResetButton.IsEnabled = false;
+            catch { }
         }
 
         private async void LoadImageButton_Click(object sender, RoutedEventArgs e)
@@ -117,6 +121,7 @@ namespace Kernel_Convolutions
             MeanButton.IsEnabled = true;
             SobelButton.IsEnabled = true;
             AnimationToggleSwitch.IsEnabled = true;
+            AngleIdentificationSwitch.IsEnabled = true;
         }
 
         private async void SetImageOutput()
@@ -245,15 +250,15 @@ namespace Kernel_Convolutions
             catch { }
         }
 
-        private void GreyscaleButton_Click(object sender, RoutedEventArgs e)
+        public static SoftwareBitmap GreyscaleImage(SoftwareBitmap sourceBitmap)
         {
-            try
+            ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
+            using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(sourceBitmap))
             {
-                ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
-                using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(ImageData.OriginalBitmap))
+                SoftwareBitmap resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(resultBitmap))
                 {
-                    ImageData.NewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
-                    using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(ImageData.NewBitmap))
+                    try
                     {
                         SoftwareBitmapPixel pixel;
 
@@ -302,11 +307,17 @@ namespace Kernel_Convolutions
                             }
                         }
                     }
+                    catch { }
                 }
                 ImageData.ResultGreyscale = true;
-                SetImageOutput();
+                return resultBitmap;
             }
-            catch { }
+        }
+
+        private void GreyscaleButton_Click(object sender, RoutedEventArgs e)
+        {
+            ImageData.NewBitmap = GreyscaleImage(ImageData.OriginalBitmap);
+            SetImageOutput();
         }
         
         public void SetKernelDisplay(int[,] kernel)
@@ -353,15 +364,69 @@ namespace Kernel_Convolutions
             SetImageOutput();
         }
 
+        private byte ColourPythag(byte colourA, byte colourB)
+        {
+            return (byte)Math.Sqrt(Math.Pow(colourA, 2) + Math.Pow(colourB, 2));
+        }
+
+        private SoftwareBitmapPixel ColourAngle(byte colourA, byte colourB)
+        {
+            byte grey = ColourPythag(colourA, colourB);
+            double angle = (colourA == 0) ? 180 : Math.Atan(colourB / colourA) * 360 / Math.PI;
+            var newRGB = new ColorMine.ColorSpaces.Hsv(angle, 1, grey / 255d).ToRgb();
+            return new SoftwareBitmapPixel() { r = (byte)newRGB.R, g = (byte)newRGB.G, b = (byte)newRGB.B };
+        }
+
+        private SoftwareBitmap BitmapPythag(SoftwareBitmap bitmapA, SoftwareBitmap bitmapB)
+        {
+            int width = Math.Min(bitmapA.PixelWidth,bitmapB.PixelWidth);
+            int height = Math.Min(bitmapA.PixelHeight,bitmapB.PixelHeight);
+
+            SoftwareBitmap resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, width, height, BitmapAlphaMode.Ignore);
+            using (SoftwareBitmapEditor resultEditor = new SoftwareBitmapEditor(resultBitmap), editorA = new SoftwareBitmapEditor(bitmapA), editorB = new SoftwareBitmapEditor(bitmapB))
+            {
+                for(uint x = 0; x < width; x++)
+                {
+                    for(uint y = 0; y < height; y++)
+                    {
+                        SoftwareBitmapPixel pixelA = editorA.getPixel(x, y);
+                        SoftwareBitmapPixel pixelB = editorB.getPixel(x, y);
+
+                        if (AngleIdentificationSwitch.IsOn)
+                        {
+                            SoftwareBitmapPixel newPixel = ColourAngle(pixelA.r, pixelB.r);
+                            resultEditor.setPixel(x, y, newPixel.r, newPixel.g, newPixel.b);
+                            ImageData.ResultGreyscale = false;
+                        }
+                        else
+                        {
+                            byte newRed = ColourPythag(pixelA.r, pixelB.r);
+                            byte newGreen = ColourPythag(pixelA.b, pixelB.b);
+                            byte newBlue = ColourPythag(pixelA.g, pixelB.g);
+                            resultEditor.setPixel(x, y, newRed, newGreen, newBlue);
+                        }
+                    }
+                }
+            }
+            return resultBitmap;
+        }
+
         private async void SobelButton_Click(object sender, RoutedEventArgs e)
         {
-            Convolution gX = new Convolution(new int[3, 3] { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } }, this, ImageData.OriginalBitmap, 1);
-            ImageData.NewBitmap = await gX.Run();
+            if (AngleIdentificationSwitch.IsOn && !ImageData.OriginalGreyscale)
+            {
+                ImageData.OriginalBitmap = GreyscaleImage(ImageData.OriginalBitmap);
+                ImageData.OriginalGreyscale = true;
+            }
 
-            SetImageOutput();
+            Convolution gX = new Convolution(new int[3, 3] { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } }, this, ImageData.OriginalBitmap, 1, true);
+            SoftwareBitmap gXBitmap = await gX.Run();
 
-            Convolution gY = new Convolution(new int[3, 3] { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap, 1);
-            ImageData.NewBitmap = await gY.Run();
+            Convolution gY = new Convolution(new int[3, 3] { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap, 1, true);
+            SoftwareBitmap gYBitmap = await gY.Run();
+
+            SoftwareBitmap result = BitmapPythag(gXBitmap, gYBitmap);
+            ImageData.NewBitmap = result;
 
             SetImageOutput();
         }
@@ -385,13 +450,14 @@ namespace Kernel_Convolutions
         blue,
         grey
     }
+
     public class Convolution
     {
 
         private MainPage Page;
         private SoftwareBitmap SourceBitmap;
 
-        public Convolution(int[,] kernel, MainPage page, SoftwareBitmap source, int divisor = 0)
+        public Convolution(int[,] kernel, MainPage page, SoftwareBitmap source, int divisor = 0, bool ignoreEdgePixels = false)
         {
             Kernel = kernel;
             KernelSize = (int)Math.Sqrt(kernel.Length);
@@ -405,6 +471,9 @@ namespace Kernel_Convolutions
                 CalculateDivisor = false;
             }
 
+            if (ignoreEdgePixels)
+                padding = ImageData.PixelIncrement;
+
         }
 
         public int[,] Kernel { get; private set; }
@@ -412,6 +481,8 @@ namespace Kernel_Convolutions
 
         private bool CalculateDivisor = true;
         public int KernelTotal { get; private set; }
+
+        private uint padding = 0;
 
         private async Task RunKernelAnimation(SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue)
         {
@@ -494,15 +565,14 @@ namespace Kernel_Convolutions
 
                 using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(SourceBitmap))
                 {
-                    resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                    resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement) - (int)(2 * padding), editor.height - (int)(editor.height % ImageData.PixelIncrement) - (int)(2 * padding), BitmapAlphaMode.Ignore);
                     using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(resultBitmap))
                     {
-
                         if (ImageData.OriginalGreyscale)
                         {
-                            for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
+                            for (uint row = padding; row < editor.height - padding; row += ImageData.PixelIncrement)
                             {
-                                for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
+                                for (uint column = padding; column < editor.width - padding; column += ImageData.PixelIncrement)
                                 {
                                     context = new int[KernelSize, KernelSize];
                                     result = new int[KernelSize, KernelSize];
@@ -530,7 +600,7 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
-                                    newPixelValue = resultTotal / KernelTotal;
+                                    newPixelValue = Math.Abs(resultTotal / KernelTotal);
 
                                     // Set colour for area in new image
                                     for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
@@ -538,7 +608,7 @@ namespace Kernel_Convolutions
                                         for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                         {
                                             if (column + newX < newEditor.width && row + newY < newEditor.height)
-                                                newEditor.setPixel(column + newX, row + newY, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
+                                                newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
                                         }
                                     }
 
@@ -551,9 +621,9 @@ namespace Kernel_Convolutions
                         {
                             foreach (Channel channel in new List<Channel> { Channel.red, Channel.green, Channel.blue })
                             {
-                                for (uint row = 0; row < editor.height; row += ImageData.PixelIncrement)
+                                for (uint row = padding; row < editor.height - padding; row += ImageData.PixelIncrement)
                                 {
-                                    for (uint column = 0; column < editor.width; column += ImageData.PixelIncrement)
+                                    for (uint column = padding; column < editor.width - padding; column += ImageData.PixelIncrement)
                                     {
                                         context = new int[KernelSize, KernelSize];
                                         result = new int[KernelSize, KernelSize];
@@ -583,23 +653,23 @@ namespace Kernel_Convolutions
                                             }
                                         }
 
-                                        newPixelValue = resultTotal / KernelTotal;
+                                        newPixelValue = Math.Abs(resultTotal / KernelTotal);
 
                                         // Set colour for area in new image
                                         for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                         {
                                             for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                             {
-                                                if (column + newX < newEditor.width && row + newY < newEditor.height)
+                                                if (column + newX - padding < newEditor.width && row + newY - padding < newEditor.height)
                                                 {
-                                                    SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX, row + newY);
+                                                    SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX - padding, row + newY - padding);
 
                                                     if (channel == Channel.red)
-                                                        newEditor.setPixel(column + newX, row + newY, (byte)newPixelValue, currentPixel.b, currentPixel.g);
+                                                        newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, currentPixel.b, currentPixel.g);
                                                     else if (channel == Channel.blue)
-                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, (byte)newPixelValue, currentPixel.g);
+                                                        newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, (byte)newPixelValue, currentPixel.g);
                                                     else
-                                                        newEditor.setPixel(column + newX, row + newY, currentPixel.r, currentPixel.b, (byte)newPixelValue);
+                                                        newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, currentPixel.b, (byte)newPixelValue);
 
                                                 }
                                             }

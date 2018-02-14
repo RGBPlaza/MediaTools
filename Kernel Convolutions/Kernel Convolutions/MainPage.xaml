@@ -95,6 +95,7 @@
 
                     <StackPanel>
                         <TextBlock Text="Sobel" FontFamily="Bahnschrift" FontSize="24"/>
+                        <ToggleSwitch Name="AngleIdentificationSwitch" Header="Identify Angles" IsEnabled="False"/>
                         <Button Name="SobelButton" Content="Go" Click="SobelButton_Click" IsEnabled="False"/>
                     </StackPanel>
 
