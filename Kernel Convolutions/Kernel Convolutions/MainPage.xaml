@@ -120,6 +120,15 @@
 
             <TextBlock Text="Original Image" Grid.Row="1" Style="{StaticResource TitleTextBlock}"/>
             <Image Name="OriginalImage" Grid.Row="2" VerticalAlignment="Top" HorizontalAlignment="Stretch"></Image>
+            
+            <Border Name="MovingKernelHolder" Grid.Row="2" BorderBrush="White" BorderThickness="1"  HorizontalAlignment="Left" VerticalAlignment="Top" Visibility="Collapsed" Padding="0" Margin="-3,-3,0,0">
+                <Border.Transitions>
+                    <TransitionCollection>
+                        <RepositionThemeTransition IsStaggeringEnabled="False"/>
+                    </TransitionCollection>
+                </Border.Transitions>
+                <Grid Name="MovingKernelGrid" RowSpacing="0" ColumnSpacing="0" Padding="0" Margin="0"/>
+            </Border>
 
             <TextBlock Text="New Image" Grid.Row="1" Grid.Column="1" Style="{StaticResource TitleTextBlock}"/>
             <Image Name="NewImage" Grid.Row="2" Grid.Column="1" VerticalAlignment="Top" HorizontalAlignment="Stretch"></Image>

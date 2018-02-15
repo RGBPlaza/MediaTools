@@ -320,15 +320,71 @@ namespace Kernel_Convolutions
             SetImageOutput();
         }
         
-        public void SetKernelDisplay(int[,] kernel)
+        public void SetKernelDisplay(int[,] kernel, int kernelSize)
         {
+            MovingKernelGrid.RowDefinitions.Clear();
+            MovingKernelGrid.ColumnDefinitions.Clear();
+            MovingKernelGrid.Children.Clear();
+
+            double imageSizeProportion = OriginalImage.ActualWidth / ImageData.OriginalBitmap.PixelWidth;
+
+            for (int i = 0; i < kernelSize; i++)
+            {
+                MovingKernelGrid.RowDefinitions.Add(new RowDefinition() { Height = new GridLength(ImageData.OriginalPixelIncrement * imageSizeProportion) });
+                for (int j = 0; j < kernelSize; j++)
+                {
+                    if (i == 0) MovingKernelGrid.ColumnDefinitions.Add(new ColumnDefinition() { Width = new GridLength(ImageData.OriginalPixelIncrement * imageSizeProportion) });
+
+                    Rectangle rectangle = new Rectangle() { Stroke = new SolidColorBrush(Windows.UI.Colors.White), StrokeThickness = 1, Margin = new Thickness(0)};
+                    Grid.SetRow(rectangle, i);
+                    Grid.SetColumn(rectangle, j);
+                    MovingKernelGrid.Children.Add(rectangle);
+
+                    TextBlock textBlock = (TextBlock)FindName("Kernel" + i.ToString() + j.ToString());
+                    textBlock.Text = kernel[i, j].ToString();
+                }
+            }
+
+            double margin = imageSizeProportion * (0 - (ImageData.OriginalPixelIncrement + 3));
+            MovingKernelHolder.Margin = new Thickness(margin, margin, 0, 0);
+            MovingKernelHolder.Visibility = Visibility.Visible;
+
+        }
+
+        public void UpdateMovingKernel(uint x, uint y)
+        {
+            double imageSizeProportion = OriginalImage.ActualWidth / ImageData.OriginalBitmap.PixelWidth;
+
+            if (ImageData.OriginalPixelIncrement * imageSizeProportion != MovingKernelGrid.RowDefinitions[0].ActualHeight)
+            {
+                foreach (RowDefinition r in MovingKernelGrid.RowDefinitions) r.Height = new GridLength(ImageData.OriginalPixelIncrement * imageSizeProportion);
+                foreach (ColumnDefinition c in MovingKernelGrid.ColumnDefinitions) c.Width = new GridLength(ImageData.OriginalPixelIncrement * imageSizeProportion);
+            }
+
+            double marginX = imageSizeProportion * (x - (ImageData.OriginalPixelIncrement + 3));
+            double marginY = imageSizeProportion * (y - (ImageData.OriginalPixelIncrement + 3));
+            MovingKernelHolder.Margin = new Thickness(marginX, marginY, 0, 0);
+        }
+
+        public void ClearKernelDisplay()
+        {
+            MovingKernelHolder.Visibility = Visibility.Collapsed;
             for (int i = 0; i < 3; i++)
             {
                 for (int j = 0; j < 3; j++)
                 {
-                    TextBlock textBlock = (TextBlock)FindName("Kernel" + i.ToString() + j.ToString());
-                    textBlock.Text = kernel[i, j].ToString();
+                    TextBlock kernelTextBlock = (TextBlock)FindName("Kernel" + i.ToString() + j.ToString());
+                    kernelTextBlock.Text = string.Empty;
+
+                    TextBlock contextTextBlock = (TextBlock)FindName("Context" + i.ToString() + j.ToString());
+                    contextTextBlock.Text = string.Empty;
+
+                    TextBlock resultTextBlock = (TextBlock)FindName("Result" + i.ToString() + j.ToString());
+                    resultTextBlock.Text = string.Empty;
                 }
+                ResultTotalTextBlock.Text = string.Empty;
+                KernelTotalTextBlock.Text = string.Empty;
+                NewPixelTextBlock.Text = string.Empty;
             }
         }
 
@@ -477,15 +533,16 @@ namespace Kernel_Convolutions
         }
 
         public int[,] Kernel { get; private set; }
-        private int KernelSize;
+        public int KernelSize;
 
         private bool CalculateDivisor = true;
         public int KernelTotal { get; private set; }
 
         private uint padding = 0;
 
-        private async Task RunKernelAnimation(SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue)
+        private async Task RunKernelAnimation(SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue, uint column, uint row)
         {
+            Page.UpdateMovingKernel(column,row);
             Page.SetResultDisplay(context, result, resultTotal, KernelTotal, newPixelValue);
             ImageData.PreviewBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width, editor.height, BitmapAlphaMode.Premultiplied);
             using (SoftwareBitmapEditor previewEditor = new SoftwareBitmapEditor(ImageData.PreviewBitmap))
@@ -510,7 +567,7 @@ namespace Kernel_Convolutions
             await Page.SetPreviewImage();
         }
 
-        private async Task TryAnimateKernel(bool isFast, SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue)
+        private async Task TryAnimateKernel(bool isFast, SoftwareBitmapEditor editor, Channel channel, int[,] context, int[,] result, int resultTotal, int newPixelValue, uint x, uint y)
         {
             if (ImageData.AnimationsOn)
             {
@@ -519,31 +576,31 @@ namespace Kernel_Convolutions
                     case 1:
                         if (!isFast)
                         {
-                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue,x,y);
                             await Task.Delay(500);
                         }
                         break;
                     case 2:
                         if (!isFast)
                         {
-                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue, x, y);
                             await Task.Delay(100);
                         }
                         break;
                     case 3:
                         if (!isFast)
                         {
-                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue, x, y);
                             await Task.Delay(10);
                         }
                         break;
                     case 4:
                         if (!isFast)
-                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue, x, y);
                         break;
                     case 5:
                         if (isFast)
-                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue);
+                            await RunKernelAnimation(editor, channel, context, result, resultTotal, newPixelValue, x, y);
                         break;
                 }
             }
@@ -558,7 +615,7 @@ namespace Kernel_Convolutions
                 int resultTotal = 0;
                 int newPixelValue = 0;
 
-                Page.SetKernelDisplay(Kernel);
+                Page.SetKernelDisplay(Kernel, KernelSize);
                 ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
 
                 SoftwareBitmap resultBitmap;
@@ -612,9 +669,9 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
-                                    await TryAnimateKernel(false, newEditor, Channel.grey, context, result, resultTotal, newPixelValue);
+                                    await TryAnimateKernel(false, newEditor, Channel.grey, context, result, resultTotal, newPixelValue,column,row);
                                 }
-                                await TryAnimateKernel(true, newEditor, Channel.grey, context, result, resultTotal, newPixelValue);
+                                await TryAnimateKernel(true, newEditor, Channel.grey, context, result, resultTotal, newPixelValue, (uint)newEditor.width - ImageData.OriginalPixelIncrement, row);
                             }
                         }
                         else
@@ -675,17 +732,20 @@ namespace Kernel_Convolutions
                                             }
                                         }
 
-                                        await TryAnimateKernel(false, newEditor, channel, context, result, resultTotal, newPixelValue);
+                                        await TryAnimateKernel(false, newEditor, channel, context, result, resultTotal, newPixelValue, column, row);
                                     }
-                                    await TryAnimateKernel(true, newEditor, channel, context, result, resultTotal, newPixelValue);
+                                    await TryAnimateKernel(true, newEditor, channel, context, result, resultTotal, newPixelValue, (uint)newEditor.width - ImageData.OriginalPixelIncrement, row);
                                 }
                             }
                         }
                     }
                 }
+                Page.ClearKernelDisplay();
                 return resultBitmap;
             }
-            catch {
+            catch
+            {
+                Page.ClearKernelDisplay();
                 return SourceBitmap;
             }
         }
