@@ -122,6 +122,8 @@ namespace Kernel_Convolutions
             SobelButton.IsEnabled = true;
             AnimationToggleSwitch.IsEnabled = true;
             AngleIdentificationSwitch.IsEnabled = true;
+            HueShiftButton.IsEnabled = true;
+            HueShiftSlider.IsEnabled = true;
         }
 
         private async void SetImageOutput()
@@ -314,6 +316,40 @@ namespace Kernel_Convolutions
             }
         }
 
+        public static SoftwareBitmap ShiftHue(SoftwareBitmap sourceBitmap, double degrees)
+        {
+            ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
+            using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(sourceBitmap))
+            {
+                SoftwareBitmap resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement), editor.height - (int)(editor.height % ImageData.PixelIncrement), BitmapAlphaMode.Ignore);
+                using (SoftwareBitmapEditor resultEditor = new SoftwareBitmapEditor(resultBitmap))
+                {
+                    try
+                    {
+                        SoftwareBitmapPixel originalPixel;
+
+                        for (uint x = 0; x < editor.width; x++)
+                        {
+                            for (uint y = 0; y < editor.height; y++)
+                            {
+                                originalPixel = editor.getPixel(x, y);
+
+                                var hsl = new ColorMine.ColorSpaces.Rgb(originalPixel.r, originalPixel.b, originalPixel.g).To<ColorMine.ColorSpaces.Hsl>();
+                                hsl.H += degrees;
+                                while (hsl.H > 360)
+                                    hsl.H -= 360;
+                                var pixel = hsl.ToRgb();
+
+                                resultEditor.setPixel(x, y, (byte)pixel.R, (byte)pixel.G, (byte)pixel.B);
+                            }
+                        }
+                    }
+                    catch { }
+                }
+                return resultBitmap;
+            }
+        }
+
         private void GreyscaleButton_Click(object sender, RoutedEventArgs e)
         {
             ImageData.NewBitmap = GreyscaleImage(ImageData.OriginalBitmap);
@@ -459,6 +495,7 @@ namespace Kernel_Convolutions
                             byte newRed = ColourPythag(pixelA.r, pixelB.r);
                             byte newGreen = ColourPythag(pixelA.b, pixelB.b);
                             byte newBlue = ColourPythag(pixelA.g, pixelB.g);
+
                             resultEditor.setPixel(x, y, newRed, newGreen, newBlue);
                         }
                     }
@@ -496,6 +533,12 @@ namespace Kernel_Convolutions
         private void AnimationSpeedSlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
         {
             ImageData.AnimationMode = (int)e.NewValue;
+        }
+
+        private void HueShiftButton_Click(object sender, RoutedEventArgs e)
+        {
+            ImageData.NewBitmap = ShiftHue(ImageData.OriginalBitmap, HueShiftSlider.Value);
+            SetImageOutput();
         }
     }
 
@@ -616,6 +659,7 @@ namespace Kernel_Convolutions
                 int newPixelValue = 0;
 
                 Page.SetKernelDisplay(Kernel, KernelSize);
+                ImageData.ResultGreyscale = ImageData.OriginalGreyscale;
                 ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
 
                 SoftwareBitmap resultBitmap;

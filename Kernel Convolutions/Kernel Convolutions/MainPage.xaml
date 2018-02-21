@@ -67,6 +67,12 @@
                         <Button Name="GreyscaleButton" Content="Go" Click="GreyscaleButton_Click" IsEnabled="False"/>
                     </StackPanel>
 
+                    <StackPanel>
+                        <TextBlock Text="Hue Shift" FontFamily="Bahnschrift" FontSize="24"/>
+                        <Slider Name="HueShiftSlider" Minimum="0" Maximum="360" Header="Degrees" IsEnabled="False" StepFrequency="10"/>
+                        <Button Name="HueShiftButton" Content="Go" Click="HueShiftButton_Click" IsEnabled="False"/>
+                    </StackPanel>
+                    
                 </StackPanel>
             </PivotItem>
             <PivotItem>
