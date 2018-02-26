@@ -213,7 +213,7 @@ namespace Kernel_Convolutions
                                 int totalGreen = 0;
                                 int totalBlue = 0;
 
-                                // Fetch the colour values for area in original image
+                                // Fetch the color values for area in original image
                                 for (uint x = 0; x < ImageData.PixelIncrement; x++)
                                 {
                                     for (uint y = 0; y < ImageData.PixelIncrement; y++)
@@ -229,12 +229,12 @@ namespace Kernel_Convolutions
                                     }
                                 }
 
-                                // Calculate mean colour values
+                                // Calculate mean color values
                                 byte r = (byte)(totalRed / pixelCount);
                                 byte g = (byte)(totalGreen / pixelCount);
                                 byte b = (byte)(totalBlue / pixelCount);
 
-                                // Set colour for same area in new image
+                                // Set color for same area in new image
                                 for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                 {
                                     for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
@@ -273,7 +273,7 @@ namespace Kernel_Convolutions
                                 int totalGreen = 0;
                                 int totalBlue = 0;
 
-                                // Fetch the colour values for area in original image
+                                // Fetch the color values for area in original image
                                 for (uint x = 0; x < ImageData.PixelIncrement; x++)
                                 {
                                     for (uint y = 0; y < ImageData.PixelIncrement; y++)
@@ -289,15 +289,15 @@ namespace Kernel_Convolutions
                                     }
                                 }
 
-                                // Calculate mean colour values
+                                // Calculate mean color values
                                 byte r = (byte)(totalRed / pixelCount);
                                 byte g = (byte)(totalGreen / pixelCount);
                                 byte b = (byte)(totalBlue / pixelCount);
 
-                                // Calculte mean overall colour
+                                // Calculte mean overall color
                                 byte grey = (byte)((r + g + b) / 3);
 
-                                // Set colour for same area in new image
+                                // Set color for same area in new image
                                 for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                 {
                                     for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
@@ -333,14 +333,13 @@ namespace Kernel_Convolutions
                             for (uint y = 0; y < editor.height; y++)
                             {
                                 originalPixel = editor.getPixel(x, y);
+                                ConversionColor color = new ConversionColor();
+                                color.SetRGB(originalPixel.r, originalPixel.b, originalPixel.g);
+                                color.AddHue(degrees);
+                                while (color.H > 360)
+                                    color.AddHue(-360);
 
-                                var hsl = new ColorMine.ColorSpaces.Rgb(originalPixel.r, originalPixel.b, originalPixel.g).To<ColorMine.ColorSpaces.Hsl>();
-                                hsl.H += degrees;
-                                while (hsl.H > 360)
-                                    hsl.H -= 360;
-                                var pixel = hsl.ToRgb();
-
-                                resultEditor.setPixel(x, y, (byte)pixel.R, (byte)pixel.G, (byte)pixel.B);
+                                resultEditor.setPixel(x, y, color.R, color.G, color.B);
                             }
                         }
                     }
@@ -456,17 +455,18 @@ namespace Kernel_Convolutions
             SetImageOutput();
         }
 
-        private byte ColourPythag(byte colourA, byte colourB)
+        private byte ColorPythag(byte colorA, byte colorB)
         {
-            return (byte)Math.Sqrt(Math.Pow(colourA, 2) + Math.Pow(colourB, 2));
+            return (byte)Math.Sqrt(Math.Pow(colorA, 2) + Math.Pow(colorB, 2));
         }
 
-        private SoftwareBitmapPixel ColourAngle(byte colourA, byte colourB)
+        private SoftwareBitmapPixel ColorAngle(byte colorA, byte colorB)
         {
-            byte grey = ColourPythag(colourA, colourB);
-            double angle = (colourA == 0) ? 180 : Math.Atan(colourB / colourA) * 360 / Math.PI;
-            var newRGB = new ColorMine.ColorSpaces.Hsv(angle, 1, grey / 255d).ToRgb();
-            return new SoftwareBitmapPixel() { r = (byte)newRGB.R, g = (byte)newRGB.G, b = (byte)newRGB.B };
+            byte grey = ColorPythag(colorA, colorB);
+            double angle = (colorA == 0) ? 180 : Math.Atan(colorB / colorA) * 360 / Math.PI;
+            ConversionColor color = new ConversionColor();
+            color.SetHSV(angle, 1, grey / 255d);
+            return new SoftwareBitmapPixel() { r = color.R, g = color.G, b = color.B };
         }
 
         private SoftwareBitmap BitmapPythag(SoftwareBitmap bitmapA, SoftwareBitmap bitmapB)
@@ -486,15 +486,15 @@ namespace Kernel_Convolutions
 
                         if (AngleIdentificationSwitch.IsOn)
                         {
-                            SoftwareBitmapPixel newPixel = ColourAngle(pixelA.r, pixelB.r);
+                            SoftwareBitmapPixel newPixel = ColorAngle(pixelA.r, pixelB.r);
                             resultEditor.setPixel(x, y, newPixel.r, newPixel.g, newPixel.b);
                             ImageData.ResultGreyscale = false;
                         }
                         else
                         {
-                            byte newRed = ColourPythag(pixelA.r, pixelB.r);
-                            byte newGreen = ColourPythag(pixelA.b, pixelB.b);
-                            byte newBlue = ColourPythag(pixelA.g, pixelB.g);
+                            byte newRed = ColorPythag(pixelA.r, pixelB.r);
+                            byte newGreen = ColorPythag(pixelA.b, pixelB.b);
+                            byte newBlue = ColorPythag(pixelA.g, pixelB.g);
 
                             resultEditor.setPixel(x, y, newRed, newGreen, newBlue);
                         }
@@ -703,7 +703,7 @@ namespace Kernel_Convolutions
 
                                     newPixelValue = Math.Abs(resultTotal / KernelTotal);
 
-                                    // Set colour for area in new image
+                                    // Set color for area in new image
                                     for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                     {
                                         for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
@@ -756,7 +756,7 @@ namespace Kernel_Convolutions
 
                                         newPixelValue = Math.Abs(resultTotal / KernelTotal);
 
-                                        // Set colour for area in new image
+                                        // Set color for area in new image
                                         for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
                                         {
                                             for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
@@ -793,6 +793,86 @@ namespace Kernel_Convolutions
                 return SourceBitmap;
             }
         }
+    }
+
+    public class ConversionColor
+    {
+        public double H { get; private set; }
+        public double S { get; private set; }
+        public double V { get; private set; }
+
+        public byte R { get; private set; }
+        public byte G { get; private set; }
+        public byte B { get; private set; }
+
+        public void SetRGB(byte r, byte g, byte b)
+        {
+            R = r;
+            G = g;
+            B = b;
+
+            int max = Math.Max(r, Math.Max(g, b));
+            int min = Math.Min(r, Math.Min(g, b));
+
+            var color = System.Drawing.Color.FromArgb(r,g,b);
+            H = color.GetHue();
+            S = (max == 0) ? 0 : 1d - (1d * min / max);
+            V = max / 255d;
+        }
+
+        public void AddHue(double hue)
+        {
+            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
+            double f = (H + hue) / 60 - Math.Floor((H + hue) / 60);
+
+            var v = Convert.ToInt32(V * 255);
+            int p = Convert.ToInt32(v * (1 - S));
+            int q = Convert.ToInt32(v * (1 - f * S));
+            int t = Convert.ToInt32(v * (1 - (1 - f) * S));
+
+            switch (hi)
+            {
+                case 0:
+                    R = (byte)v;
+                    G = (byte)t;
+                    B = (byte)p;
+                    break;
+                case 1:
+                    R = (byte)q;
+                    G = (byte)v;
+                    B = (byte)p;
+                    break;
+                case 2:
+                    R = (byte)p;
+                    G = (byte)v;
+                    B = (byte)t;
+                    break;
+                case 3:
+                    R = (byte)p;
+                    G = (byte)q;
+                    B = (byte)v;
+                    break;
+                case 4:
+                    R = (byte)t;
+                    G = (byte)p;
+                    B = (byte)v;
+                    break;
+                case 5:
+                    R = (byte)v;
+                    G = (byte)p;
+                    B = (byte)q;
+                    break;
+            }
+        }
+
+        public void SetHSV(double h, double s, double v)
+        {
+            H = 0;
+            S = s;
+            V = v;
+            AddHue(h);
+        }
+
     }
 
     public static class ImageData
