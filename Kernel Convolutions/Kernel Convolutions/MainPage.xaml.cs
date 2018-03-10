@@ -822,7 +822,7 @@ namespace Kernel_Convolutions
 
         public void AddHue(double hue)
         {
-            int hi = Convert.ToInt32(Math.Floor(hue / 60)) % 6;
+            int hi = Convert.ToInt32(Math.Floor((H + hue) / 60)) % 6;
             double f = (H + hue) / 60 - Math.Floor((H + hue) / 60);
 
             var v = Convert.ToInt32(V * 255);
