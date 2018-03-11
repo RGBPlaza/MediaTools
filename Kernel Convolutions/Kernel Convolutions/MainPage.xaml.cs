@@ -709,7 +709,10 @@ namespace Kernel_Convolutions
                                         for (uint newY = 0; newY < ImageData.PixelIncrement; newY++)
                                         {
                                             if (column + newX < newEditor.width && row + newY < newEditor.height)
+                                            {
                                                 newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
+                                                editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
+                                            }
                                         }
                                     }
 
@@ -763,14 +766,24 @@ namespace Kernel_Convolutions
                                             {
                                                 if (column + newX - padding < newEditor.width && row + newY - padding < newEditor.height)
                                                 {
+                                                    SoftwareBitmapPixel originalPixel = editor.getPixel(column + newX - padding, row + newY - padding);
                                                     SoftwareBitmapPixel currentPixel = newEditor.getPixel(column + newX - padding, row + newY - padding);
 
                                                     if (channel == Channel.red)
+                                                    {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, currentPixel.b, currentPixel.g);
+                                                        editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, originalPixel.b, originalPixel.g);
+                                                    }
                                                     else if (channel == Channel.blue)
+                                                    {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, (byte)newPixelValue, currentPixel.g);
+                                                        editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, (byte)newPixelValue, originalPixel.g);
+                                                    }
                                                     else
+                                                    {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, currentPixel.b, (byte)newPixelValue);
+                                                        editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, originalPixel.b, (byte)newPixelValue);
+                                                    }
 
                                                 }
                                             }
