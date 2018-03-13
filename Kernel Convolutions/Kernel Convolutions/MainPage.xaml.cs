@@ -39,12 +39,13 @@ namespace Kernel_Convolutions
         {
             using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(bitmap))
             {
-                for (uint x = 0; x < editor.width; x++) {
-                    for (uint y = 0; y < editor.height; y++) {
+                for (uint x = 0; x < editor.width; x++)
+                { 
+                    for (uint y = 0; y < editor.height; y++)
+                    {
                         var p = editor.getPixel(x, y);
-                        if (p.r != p.g || p.r != p.b || p.g != p.b) {
+                        if (p.r != p.g || p.r != p.b || p.g != p.b)
                             return false;
-                        }
                     }
                 }
             }
@@ -124,6 +125,7 @@ namespace Kernel_Convolutions
             AngleIdentificationSwitch.IsEnabled = true;
             HueShiftButton.IsEnabled = true;
             HueShiftSlider.IsEnabled = true;
+            ProgressiveToggleSwitch.IsEnabled = true;
         }
 
         private async void SetImageOutput()
@@ -540,6 +542,11 @@ namespace Kernel_Convolutions
             ImageData.NewBitmap = ShiftHue(ImageData.OriginalBitmap, HueShiftSlider.Value);
             SetImageOutput();
         }
+
+        private void ProgressiveToggleSwitch_Toggled(object sender, RoutedEventArgs e)
+        {
+            ImageData.ProgressiveConvolution = ProgressiveToggleSwitch.IsOn;
+        }
     }
 
     public enum Channel
@@ -711,7 +718,7 @@ namespace Kernel_Convolutions
                                             if (column + newX < newEditor.width && row + newY < newEditor.height)
                                             {
                                                 newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
-                                                editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
+                                                //editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
                                             }
                                         }
                                     }
@@ -772,17 +779,17 @@ namespace Kernel_Convolutions
                                                     if (channel == Channel.red)
                                                     {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, currentPixel.b, currentPixel.g);
-                                                        editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, originalPixel.b, originalPixel.g);
+                                                        if (ImageData.ProgressiveConvolution) editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, originalPixel.b, originalPixel.g);
                                                     }
                                                     else if (channel == Channel.blue)
                                                     {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, (byte)newPixelValue, currentPixel.g);
-                                                        editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, (byte)newPixelValue, originalPixel.g);
+                                                        if (ImageData.ProgressiveConvolution) editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, (byte)newPixelValue, originalPixel.g);
                                                     }
                                                     else
                                                     {
                                                         newEditor.setPixel(column + newX - padding, row + newY - padding, currentPixel.r, currentPixel.b, (byte)newPixelValue);
-                                                        editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, originalPixel.b, (byte)newPixelValue);
+                                                        if (ImageData.ProgressiveConvolution) editor.setPixel(column + newX - padding, row + newY - padding, originalPixel.r, originalPixel.b, (byte)newPixelValue);
                                                     }
 
                                                 }
@@ -902,8 +909,11 @@ namespace Kernel_Convolutions
         public static bool OriginalGreyscale = false;
         public static bool ResultGreyscale = false;
 
-        public static bool AnimationsOn;
-        public static int AnimationMode;
+        public static bool AnimationsOn = false;
+        public static int AnimationMode = 1;
+
+        public static bool ProgressiveConvolution = false;
+
     }
 
 }

@@ -38,7 +38,6 @@
             <RowDefinition Height="16"/>
             <RowDefinition Height="64"/>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="128"/>
             <RowDefinition Height="64"/>
             <RowDefinition Height="16"/>
         </Grid.RowDefinitions>
@@ -48,6 +47,22 @@
         </Grid.ColumnDefinitions>
 
         <TextBlock Grid.Row="1" Text="Controls" Style="{StaticResource TitleTextBlock}"/>
+        <Button Name="OptionsButton" Grid.Row="1" HorizontalAlignment="Right" Padding="8" FontSize="23" Style="{StaticResource ButtonRevealStyle}" FontFamily="Segoe MDL2 Assets" Content="&#xE115;" Background="Transparent" Margin="0,-38,-56,0">
+            <Button.Flyout>
+                <Flyout>
+                    <StackPanel Spacing="16">
+                        <StackPanel>
+                            <ToggleSwitch Name="ProgressiveToggleSwitch" Header="Progressive Colvolution" IsOn="False" IsEnabled="False" Toggled="ProgressiveToggleSwitch_Toggled"/>
+                        </StackPanel>
+
+                        <StackPanel>
+                            <ToggleSwitch Name="AnimationToggleSwitch" Header="Animations" IsOn="False" IsEnabled="False" Toggled="AnimationToggleSwitch_Toggled"/>
+                            <Slider Name="AnimationSpeedSlider" Minimum="1" Maximum="5" Header="Animation Speed" IsEnabled="False" ValueChanged="AnimationSpeedSlider_ValueChanged"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Flyout>
+            </Button.Flyout>
+        </Button>
 
         <Pivot Grid.Row="2">
             <PivotItem>
@@ -109,13 +124,12 @@
             </PivotItem>
         </Pivot>
 
-        <Grid Padding="64,0" Grid.RowSpan="6" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
+        <Grid Padding="64,0" Grid.RowSpan="5" Grid.Column="1" ColumnSpacing="64" Background="#FF111111">
             <Grid.RowDefinitions>
                 <RowDefinition Height="16"/>
                 <RowDefinition Height="64"/>
-                <RowDefinition Height="2*"/>
                 <RowDefinition Height="*"/>
-                <RowDefinition Height="128"/>
+                <RowDefinition Height="auto"/>
                 <RowDefinition Height="64"/>
                 <RowDefinition Height="16"/>
             </Grid.RowDefinitions>
@@ -142,7 +156,7 @@
             <Grid Grid.Row="3" Grid.ColumnSpan="2" Padding="16" ColumnSpacing="16" RowSpacing="16" VerticalAlignment="Center" HorizontalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="auto"/>
-                    <RowDefinition Height="146"/>
+                    <RowDefinition Height="auto"/>
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="auto"/>
@@ -331,13 +345,8 @@
 
             </Grid>
         </Grid>
-
-        <StackPanel Grid.Row="3">
-            <ToggleSwitch Name="AnimationToggleSwitch" Header="Animations" IsOn="False" IsEnabled="False" Toggled="AnimationToggleSwitch_Toggled"/>
-            <Slider Name="AnimationSpeedSlider" Minimum="1" Maximum="5" Header="Animation Speed" IsEnabled="False" ValueChanged="AnimationSpeedSlider_ValueChanged"/>
-        </StackPanel>
         
-        <StackPanel Orientation="Horizontal" Spacing="8" Grid.Row="4">
+        <StackPanel Orientation="Horizontal" Spacing="8" Grid.Row="3">
             <Button Name="LoadImageButton" Content="Load" Click="LoadImageButton_Click"/>
             <Button Name="ResetButton" Content="Reset" Click="ResetButton_Click" IsEnabled="False"/>
             <Button Name="UpdateButton" Content="Update" Click="UpdateButton_Click" IsEnabled="False"/>
