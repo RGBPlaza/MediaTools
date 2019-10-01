@@ -446,14 +446,14 @@ namespace Kernel_Convolutions
         private async void GaussianButton_Click(object sender, RoutedEventArgs e)
         {
             Convolution convolution = new Convolution(new int[3, 3] { { 1, 2, 1 }, { 2, 4, 2 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap);
-            ImageData.NewBitmap = await convolution.Run();
+            ImageData.NewBitmap = (await convolution.Run()).Item1;
             SetImageOutput();
         }
 
         private async void MeanButton_Click(object sender, RoutedEventArgs e)
         {
             Convolution convolution = new Convolution(new int[3, 3] { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } }, this, ImageData.OriginalBitmap);
-            ImageData.NewBitmap = await convolution.Run();
+            ImageData.NewBitmap = (await convolution.Run()).Item1;
             SetImageOutput();
         }
 
@@ -462,16 +462,16 @@ namespace Kernel_Convolutions
             return (byte)Math.Sqrt(Math.Pow(colorA, 2) + Math.Pow(colorB, 2));
         }
 
-        private SoftwareBitmapPixel ColorAngle(byte colorA, byte colorB)
+        private SoftwareBitmapPixel ColorAngle(byte colorA, bool signA, byte colorB, bool signB)
         {
             byte grey = ColorPythag(colorA, colorB);
-            double angle = (colorA == 0) ? 180 : Math.Atan(colorB / colorA) * 360 / Math.PI;
+            double angle = (Math.Atan2( signB ? colorB: -colorB, signA ? colorA : -colorA)+2*Math.PI)* 180 / Math.PI ;
             ConversionColor color = new ConversionColor();
             color.SetHSV(angle, 1, grey / 255d);
             return new SoftwareBitmapPixel() { r = color.R, g = color.G, b = color.B };
         }
 
-        private SoftwareBitmap BitmapPythag(SoftwareBitmap bitmapA, SoftwareBitmap bitmapB)
+        private SoftwareBitmap BitmapPythag(SoftwareBitmap bitmapA, bool[,] signMapA, SoftwareBitmap bitmapB, bool[,]signMapB)
         {
             int width = Math.Min(bitmapA.PixelWidth,bitmapB.PixelWidth);
             int height = Math.Min(bitmapA.PixelHeight,bitmapB.PixelHeight);
@@ -488,7 +488,7 @@ namespace Kernel_Convolutions
 
                         if (AngleIdentificationSwitch.IsOn)
                         {
-                            SoftwareBitmapPixel newPixel = ColorAngle(pixelA.r, pixelB.r);
+                            SoftwareBitmapPixel newPixel = ColorAngle(pixelA.r, signMapA[x, y], pixelB.r, signMapB[x, y]);
                             resultEditor.setPixel(x, y, newPixel.r, newPixel.g, newPixel.b);
                             ImageData.ResultGreyscale = false;
                         }
@@ -514,13 +514,13 @@ namespace Kernel_Convolutions
                 ImageData.OriginalGreyscale = true;
             }
 
-            Convolution gX = new Convolution(new int[3, 3] { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } }, this, ImageData.OriginalBitmap, 1, true);
-            SoftwareBitmap gXBitmap = await gX.Run();
+            Convolution gX = new Convolution(new int[3, 3] { { -1, 0, 1 }, { -2, 0, 2 }, { -1, 0, 1 } }, this, ImageData.OriginalBitmap, 4, true);
+            (SoftwareBitmap gXBitmap, bool[,] gXSignMap) = await gX.Run();
 
-            Convolution gY = new Convolution(new int[3, 3] { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap, 1, true);
-            SoftwareBitmap gYBitmap = await gY.Run();
+            Convolution gY = new Convolution(new int[3, 3] { { -1, -2, -1 }, { 0, 0, 0 }, { 1, 2, 1 } }, this, ImageData.OriginalBitmap, 4, true);
+            (SoftwareBitmap gYBitmap, bool[,] gYSignMap) = await gY.Run();
 
-            SoftwareBitmap result = BitmapPythag(gXBitmap, gYBitmap);
+            SoftwareBitmap result = BitmapPythag(gXBitmap, gXSignMap, gYBitmap, gYSignMap);
             ImageData.NewBitmap = result;
 
             SetImageOutput();
@@ -656,24 +656,30 @@ namespace Kernel_Convolutions
             }
         }
 
-        public async Task<SoftwareBitmap> Run()
+        public async Task<Tuple<SoftwareBitmap,bool[,]>> Run()
         {
             try
             {
                 int[,] context = new int[KernelSize, KernelSize];
                 int[,] result = new int[KernelSize, KernelSize];
                 int resultTotal = 0;
+                int newVal = 0;
                 int newPixelValue = 0;
+                bool isNegative = false;
 
                 Page.SetKernelDisplay(Kernel, KernelSize);
                 ImageData.ResultGreyscale = ImageData.OriginalGreyscale;
                 ImageData.PixelIncrement = ImageData.OriginalPixelIncrement;
 
                 SoftwareBitmap resultBitmap;
+                bool[,] signMap;
 
                 using (SoftwareBitmapEditor editor = new SoftwareBitmapEditor(SourceBitmap))
                 {
-                    resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, editor.width - (int)(editor.width % ImageData.PixelIncrement) - (int)(2 * padding), editor.height - (int)(editor.height % ImageData.PixelIncrement) - (int)(2 * padding), BitmapAlphaMode.Ignore);
+                    int newWidth = editor.width - (int)(editor.width % ImageData.PixelIncrement) - (int)(2 * padding);
+                    int newHeight = editor.height - (int)(editor.height % ImageData.PixelIncrement) - (int)(2 * padding);
+                    resultBitmap = new SoftwareBitmap(BitmapPixelFormat.Bgra8, newWidth, newHeight, BitmapAlphaMode.Ignore);
+                    signMap = new bool[newWidth, newHeight]; 
                     using (SoftwareBitmapEditor newEditor = new SoftwareBitmapEditor(resultBitmap))
                     {
                         if (ImageData.OriginalGreyscale)
@@ -708,7 +714,9 @@ namespace Kernel_Convolutions
                                         }
                                     }
 
-                                    newPixelValue = Math.Abs(resultTotal / KernelTotal);
+                                    newVal = resultTotal / KernelTotal;
+                                    newPixelValue = Math.Abs(newVal);
+                                    isNegative = newVal < 0;
 
                                     // Set color for area in new image
                                     for (uint newX = 0; newX < ImageData.PixelIncrement; newX++)
@@ -718,7 +726,7 @@ namespace Kernel_Convolutions
                                             if (column + newX < newEditor.width && row + newY < newEditor.height)
                                             {
                                                 newEditor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
-                                                //editor.setPixel(column + newX - padding, row + newY - padding, (byte)newPixelValue, (byte)newPixelValue, (byte)newPixelValue);
+                                                signMap[column + newX - padding, row + newY - padding] = isNegative;
                                             }
                                         }
                                     }
@@ -730,6 +738,7 @@ namespace Kernel_Convolutions
                         }
                         else
                         {
+                            signMap = null;
                             foreach (Channel channel in new List<Channel> { Channel.red, Channel.green, Channel.blue })
                             {
                                 for (uint row = padding; row < editor.height - padding; row += ImageData.PixelIncrement)
@@ -805,12 +814,12 @@ namespace Kernel_Convolutions
                     }
                 }
                 Page.ClearKernelDisplay();
-                return resultBitmap;
+                return new Tuple<SoftwareBitmap, bool[,]>(resultBitmap, signMap);
             }
             catch
             {
                 Page.ClearKernelDisplay();
-                return SourceBitmap;
+                return new Tuple<SoftwareBitmap, bool[,]>(SourceBitmap, null);
             }
         }
     }
